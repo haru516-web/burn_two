@@ -1,0 +1,88 @@
+.invite-screen {
+  position: relative;
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    linear-gradient(180deg, rgba(9, 12, 17, 0.12), rgba(9, 12, 17, 0.48)),
+    url('../image/background/okinawa.png') center / cover no-repeat,
+    #090c11;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.invite-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.18), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.14));
+  pointer-events: none;
+  z-index: 0;
+}
+
+.invite-card {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 360px);
+  display: grid;
+  gap: 18px;
+  padding: 26px 22px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.invite-card__copy {
+  display: grid;
+  gap: 6px;
+  text-align: center;
+}
+
+.invite-card__eyebrow {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.invite-card__title {
+  margin: 0;
+  font-family: 'Cormorant Garamond', 'Times New Roman', serif;
+  font-size: 34px;
+  font-weight: 500;
+  line-height: 1;
+  color: #ffffff;
+}
+
+.invite-card__field {
+  display: block;
+}
+
+.invite-card__input {
+  width: 100%;
+  min-height: 58px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.86);
+  color: #14100e;
+  font-size: 28px;
+  letter-spacing: 0.32em;
+  text-align: center;
+}
+
+.invite-card__input:focus {
+  outline: 2px solid rgba(171, 115, 75, 0.32);
+  outline-offset: 2px;
+}
+
+.invite-card__error {
+  margin: -8px 0 0;
+  color: #8f4350;
+  font-size: 12px;
+  text-align: center;
+}

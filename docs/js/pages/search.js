@@ -1,0 +1,796 @@
+import { getIcon } from '../components/icons.js';
+
+export const COUPLE_QUESTIONS = [
+  {
+    id: 'mood',
+    title: '次のデート、どんな気分？',
+    options: [
+      { value: 'relax', label: 'まったり', icon: 'issue' },
+      { value: 'cafe', label: 'カフェ', icon: 'save' },
+      { value: 'dinner', label: '夜ごはん', icon: 'timeline' },
+      { value: 'walk', label: '外を歩きたい', icon: 'follow' },
+      { value: 'home', label: 'おうち', icon: 'home' },
+      { value: 'photo', label: '写真を撮りたい', icon: 'image' },
+    ],
+  },
+  {
+    id: 'budget',
+    title: '予算はどのくらい？',
+    options: [
+      { value: '3000', label: '〜3,000円' },
+      { value: '5000', label: '〜5,000円' },
+      { value: 'special', label: '少し特別に' },
+    ],
+  },
+  {
+    id: 'pace',
+    title: '過ごし方の近さは？',
+    options: [
+      { value: 'quiet', label: '静かに話したい' },
+      { value: 'active', label: '少し動きたい' },
+      { value: 'memory', label: '記録に残したい' },
+    ],
+  },
+];
+
+export const DATE_PLANS = [
+  {
+    id: 'daikanyama-cafe',
+    title: '代官山カフェ',
+    place: '代官山',
+    copy: '静かな空間で、ゆっくり話せるカフェ。',
+    time: '11:00〜13:30',
+    date: '2025-05-03',
+    tags: ['静か', '〜3,000円', 'カフェ'],
+    image: 'assets/5-CEZXb3Sg.png',
+    weights: { cafe: 5, relax: 3, quiet: 3, 3000: 2, 5000: 2 },
+  },
+  {
+    id: 'ebisu-night-cafe',
+    title: '恵比寿 夜カフェ',
+    place: '恵比寿',
+    copy: '夜景を楽しみながら、落ち着いた時間を。',
+    time: '19:00〜21:00',
+    date: '2025-05-10',
+    tags: ['夜', '写真映え'],
+    image: 'assets/10-CNvd6Y-G.png',
+    weights: { dinner: 4, photo: 3, memory: 3, special: 3, quiet: 1 },
+  },
+  {
+    id: 'nakameguro-walk',
+    title: '中目黒さんぽ',
+    place: '中目黒',
+    copy: '川沿いをのんびり歩いてリフレッシュ。',
+    time: '14:00〜16:30',
+    date: '2025-05-24',
+    tags: ['外', 'ゆっくり'],
+    image: 'assets/8-Byay75Vc.png',
+    weights: { walk: 5, active: 3, relax: 2, 3000: 1 },
+  },
+  {
+    id: 'home-page-making',
+    title: 'おうちでページ作り',
+    place: 'おうち',
+    copy: '撮りためた写真を選んで、ふたりの一枚に整える時間。',
+    time: '15:00〜17:00',
+    date: '2025-05-31',
+    tags: ['おうち', '記録'],
+    image: 'assets/11-Dxtb6Ugd.png',
+    weights: { home: 5, memory: 4, photo: 2, relax: 2, 3000: 2 },
+  },
+];
+
+function renderBrand() {
+  return `
+    <div class="couple-brand" aria-label="BURN">
+      <p class="couple-brand__word">BURN</p>
+      <div class="couple-brand__line" aria-hidden="true"><span></span><span></span></div>
+    </div>
+  `;
+}
+
+function getTodayDateKey() {
+  const date = new Date();
+  return formatDateKey(date.getFullYear(), date.getMonth() + 1, date.getDate());
+}
+
+function formatDateKey(year, month, day) {
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function parseDateKey(dateString, fallback = getTodayDateKey()) {
+  const match = String(dateString || fallback).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return parseDateKey(fallback, '2025-05-03');
+  return {
+    year: Number(match[1]),
+    month: Number(match[2]),
+    day: Number(match[3]),
+  };
+}
+
+function getMonthLabel(dateString) {
+  const { year, month } = parseDateKey(dateString);
+  return `${year}年${month}月`;
+}
+
+function getDaysInMonth(year, month) {
+  return new Date(year, month, 0).getDate();
+}
+
+function buildCalendarDays(dateString, weekStartsOn = 1) {
+  const { year, month } = parseDateKey(dateString);
+  const firstDay = new Date(year, month - 1, 1).getDay();
+  const leadingDays = (firstDay - weekStartsOn + 7) % 7;
+  const startDate = new Date(year, month - 1, 1 - leadingDays);
+  return Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + index);
+    const dateKey = formatDateKey(date.getFullYear(), date.getMonth() + 1, date.getDate());
+    return {
+      date: dateKey,
+      day: date.getDate(),
+      inactive: date.getFullYear() !== year || date.getMonth() !== month - 1,
+    };
+  });
+}
+
+function formatDateLabel(dateString) {
+  const date = new Date(`${dateString}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return '5/3 Sat';
+  return `${date.getMonth() + 1}/${date.getDate()} ${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()]}`;
+}
+
+function getPostTitle(post) {
+  const headline = String(post.composeData?.headline || '').trim();
+  if (headline && headline.toLowerCase() !== 'text') return headline;
+  const caption = String(post.caption || '').split('/')[0].trim();
+  return caption || 'ふたりのページ';
+}
+
+function getEntriesForDate(state, dateString) {
+  return (state.couple?.calendarEntries || []).filter((entry) => entry.date === dateString);
+}
+
+function getPostsForDate(state, dateString) {
+  return (state.posts || []).filter((post) => post.createdAt?.slice(0, 10) === dateString);
+}
+
+export function getCoupleRecommendations(couple = {}) {
+  const values = [
+    ...Object.values(couple.answers?.you || {}),
+    ...Object.values(couple.answers?.partner || {}),
+  ].filter(Boolean);
+
+  return DATE_PLANS
+    .map((plan) => ({
+      ...plan,
+      score: values.reduce((sum, value) => sum + (plan.weights[value] || 0), 0),
+    }))
+    .sort((a, b) => b.score - a.score || a.title.localeCompare(b.title, 'ja'))
+    .slice(0, 3);
+}
+
+function getQuestionProgress(couple = {}) {
+  const answers = couple.answers?.you || {};
+  const answeredCount = COUPLE_QUESTIONS.filter((question) => answers[question.id]).length;
+  const nextQuestion = COUPLE_QUESTIONS.find((question) => !answers[question.id]) || null;
+  return { answeredCount, nextQuestion };
+}
+
+function renderCalendarGrid(state, uiState) {
+  const entries = state.couple?.calendarEntries || [];
+  const postDates = new Set((state.posts || []).map((post) => post.createdAt?.slice(0, 10)).filter(Boolean));
+  const entryDates = new Set(entries.map((entry) => entry.date));
+  const selectedDate = uiState.selectedCalendarDate || getTodayDateKey();
+  const todayDate = getTodayDateKey();
+  const calendarDays = buildCalendarDays(selectedDate, 1);
+
+  return `
+    <section class="couple-card couple-calendar-card couple-calendar-card--full">
+      <div class="couple-section-head">
+        <h1>カレンダー</h1>
+        <div class="couple-month">
+          <button type="button" aria-label="前の月" data-calendar-month="-1">${getIcon('returnLeft')}</button>
+          <span>${getMonthLabel(selectedDate)}</span>
+          <button type="button" aria-label="次の月" data-calendar-month="1">${getIcon('chevronRight')}</button>
+        </div>
+      </div>
+      <div class="couple-calendar">
+        ${['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map((day) => `<span class="couple-calendar__dow">${day}</span>`).join('')}
+        ${calendarDays.map((calendarDay) => {
+          const date = calendarDay.date;
+          const hasEntry = entryDates.has(date);
+          const hasPage = postDates.has(date);
+          const isTodayInActiveMonth = !calendarDay.inactive && date === todayDate;
+          return `
+            <button
+              class="couple-calendar__day ${calendarDay.inactive ? 'is-muted' : ''} ${hasEntry ? 'is-marked is-rose' : ''} ${hasPage ? 'has-page' : ''} ${isTodayInActiveMonth ? 'is-today' : ''} ${date === selectedDate ? 'is-selected' : ''}"
+              type="button"
+              data-calendar-date="${date}"
+            >${calendarDay.day}</button>
+          `;
+        }).join('')}
+      </div>
+    </section>
+  `;
+}
+
+function getDateAddDraft(uiState = {}) {
+  return {
+    date: uiState.selectedCalendarDate || getTodayDateKey(),
+    timeOfDay: 'noon',
+    startTime: '11:00',
+    endTime: '13:30',
+    type: 'cafe',
+    title: '',
+    place: '',
+    note: '',
+    ...(uiState.dateAddDraft || {}),
+  };
+}
+
+function escapeDateAddText(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function renderDateAddProgress(step) {
+  return `
+    <div class="date-add-progress" aria-label="追加ステップ">
+      <span class="${step >= 1 ? 'is-active' : ''}"></span>
+      <span class="${step >= 2 ? 'is-active' : ''}"></span>
+      <span class="${step >= 3 ? 'is-active' : ''}"></span>
+    </div>
+  `;
+}
+
+function renderDateAddCalendar(uiState) {
+  const draft = getDateAddDraft(uiState);
+  const calendarDays = buildCalendarDays(draft.date, 0);
+  const todayDate = getTodayDateKey();
+  return `
+    ${renderBrand()}
+    <header class="date-add-title">
+      <p>STEP 1</p>
+      <h1>日付を選ぶ</h1>
+    </header>
+    ${renderDateAddProgress(1)}
+    <section class="couple-card date-add-card">
+      <h2>デートの日を選ぶ</h2>
+      <div class="couple-month date-add-month">
+        <button type="button" aria-label="前の月" data-date-add-month="-1">${getIcon('returnLeft')}</button>
+        <span>${getMonthLabel(draft.date)}</span>
+        <button type="button" aria-label="次の月" data-date-add-month="1">${getIcon('chevronRight')}</button>
+      </div>
+      <div class="couple-calendar date-add-calendar">
+        ${['日', '月', '火', '水', '木', '金', '土'].map((day) => `<span class="couple-calendar__dow">${day}</span>`).join('')}
+        ${calendarDays.map((calendarDay) => {
+          const isTodayInActiveMonth = !calendarDay.inactive && calendarDay.date === todayDate;
+          return `
+            <button
+              class="couple-calendar__day ${calendarDay.inactive ? 'is-muted' : ''} ${isTodayInActiveMonth ? 'is-today' : ''} ${calendarDay.date === draft.date ? 'is-marked is-rose is-selected' : ''}"
+              type="button"
+              data-date-add-date="${calendarDay.date}"
+            >${calendarDay.day}</button>
+          `;
+        }).join('')}
+      </div>
+    </section>
+    <button class="date-add-primary" type="button" data-date-add-next>次へ ${getIcon('chevronRight')}</button>
+    <button class="date-add-text-button" type="button" data-date-add-cancel>ホームに戻る</button>
+  `;
+}
+
+function renderDateAddDetails(uiState) {
+  const draft = getDateAddDraft(uiState);
+  const timeOptions = [
+    ['morning', '午前', '☼'],
+    ['noon', '昼から', '●'],
+    ['evening', '夕方', '◐'],
+    ['night', '夜', '☾'],
+    ['unknown', '未定', '…'],
+  ];
+  const typeOptions = [
+    ['cafe', 'カフェ', '☕'],
+    ['dinner', '夜ごはん', '♨'],
+    ['walk', 'さんぽ', '♙'],
+    ['home', 'おうち', '⌂'],
+  ];
+  return `
+    ${renderBrand()}
+    <header class="date-add-title">
+      <p>STEP 2</p>
+      <h1>時間とデートタイプ</h1>
+    </header>
+    ${renderDateAddProgress(2)}
+    <form class="date-add-form" data-date-add-time-form>
+      <section class="couple-card date-add-card">
+        <h2>何時くらいに会う？</h2>
+        <div class="date-add-options date-add-options--five">
+          ${timeOptions.map(([value, label, icon]) => `
+            <button class="${draft.timeOfDay === value ? 'is-selected' : ''}" type="button" data-date-add-timeofday="${value}">
+              <span>${icon}</span>${label}
+            </button>
+          `).join('')}
+        </div>
+        <div class="date-add-time-row">
+          <label>開始時間<select name="startTime">${renderTimeOptions(draft.startTime)}</select></label>
+          <span>〜</span>
+          <label>終了時間<select name="endTime">${renderTimeOptions(draft.endTime)}</select></label>
+        </div>
+      </section>
+      <section class="couple-card date-add-card">
+        <h2>どんなデート？</h2>
+        <div class="date-add-options">
+          ${typeOptions.map(([value, label, icon]) => `
+            <button class="${draft.type === value ? 'is-selected' : ''}" type="button" data-date-add-type="${value}">
+              <span>${icon}</span>${label}
+            </button>
+          `).join('')}
+        </div>
+      </section>
+      <div class="date-add-actions">
+        <button type="button" data-date-add-back>戻る</button>
+        <button type="button" data-date-add-next>次へ</button>
+      </div>
+    </form>
+  `;
+}
+
+function renderTimeOptions(selected) {
+  const times = ['未定', '09:00', '10:00', '11:00', '12:00', '13:30', '15:00', '17:00', '19:00', '21:00'];
+  return times.map((time) => `<option value="${time}" ${selected === time ? 'selected' : ''}>${time}</option>`).join('');
+}
+
+function renderDateAddText(uiState) {
+  const draft = getDateAddDraft(uiState);
+  return `
+    ${renderBrand()}
+    <header class="date-add-title">
+      <p>STEP 3</p>
+      <h1>タイトルと場所</h1>
+    </header>
+    ${renderDateAddProgress(3)}
+    <form class="date-add-form" data-date-add-form>
+      <section class="couple-card date-add-field-card">
+        <label>
+          <span>タイトル</span>
+          <input name="title" value="${escapeDateAddText(draft.title)}" maxlength="40" placeholder="代官山カフェデート" required />
+        </label>
+      </section>
+      <section class="couple-card date-add-field-card">
+        <label>
+          <span>場所</span>
+          <input name="place" value="${escapeDateAddText(draft.place)}" maxlength="40" placeholder="代官山カフェ" />
+        </label>
+      </section>
+      <section class="couple-card date-add-field-card">
+        <label>
+          <span>メモ</span>
+          <textarea name="note" maxlength="120" placeholder="お気に入りのカフェで、ゆっくり話す。">${escapeDateAddText(draft.note)}</textarea>
+        </label>
+      </section>
+      <div class="date-add-actions">
+        <button type="button" data-date-add-back>戻る</button>
+        <button type="submit">カレンダーに追加</button>
+      </div>
+    </form>
+  `;
+}
+
+function renderDateAdd(state, uiState) {
+  const step = Number(uiState.dateAddStep) || 1;
+  if (step === 2) return renderDateAddDetails(uiState);
+  if (step === 3) return renderDateAddText(uiState);
+  return renderDateAddCalendar(uiState);
+}
+
+function renderDateDetail(state, uiState) {
+  const selectedDate = uiState.selectedCalendarDate || getTodayDateKey();
+  const entries = getEntriesForDate(state, selectedDate);
+  const pages = getPostsForDate(state, selectedDate);
+  const entry = entries[0] || null;
+
+  if (!entry) {
+    return `
+      <section class="couple-card couple-date-detail">
+        <p class="couple-kicker">${formatDateLabel(selectedDate)}</p>
+        <h2>予定はまだありません</h2>
+        <p>この日にデートの予定を追加すると、ここにタイトル・場所・時間が表示されます。</p>
+        <div class="couple-date-detail__pages">
+          <span>作成済みページ</span>
+          <strong>${pages.length}</strong>
+        </div>
+        <div class="couple-date-detail__actions">
+          <button type="button" data-couple-view="dateAdd" data-date-add-step="1">デートを追加</button>
+          <button type="button" data-home-nav="compose">ページを作る</button>
+        </div>
+      </section>
+    `;
+  }
+
+  return `
+    <section class="couple-card couple-date-detail">
+      <p class="couple-kicker">${formatDateLabel(selectedDate)}</p>
+      <h2>${entry.title}</h2>
+      <dl>
+        <div><dt>場所</dt><dd>${entry.place || '未設定'}</dd></div>
+        <div><dt>時間</dt><dd>${entry.time || '未設定'}</dd></div>
+      </dl>
+      <p>${entry.note || 'この日の予定をふたりで整えます。'}</p>
+      <div class="couple-date-detail__pages">
+        <span>作成済みページ</span>
+        <strong>${pages.length}</strong>
+      </div>
+      <div class="couple-date-detail__actions">
+        <button type="button" data-home-nav="compose">ページを作る</button>
+        <button type="button" data-couple-view="question">質問を送る</button>
+      </div>
+    </section>
+  `;
+}
+
+function renderDateListEntry(entry) {
+  return `
+    <article class="couple-date-list-card couple-card">
+      <div>
+        <p class="couple-kicker">${formatDateLabel(entry.date)}</p>
+        <h2>${entry.title || 'ふたりのデート'}</h2>
+        <dl>
+          <div><dt>場所</dt><dd>${entry.place || '未設定'}</dd></div>
+          <div><dt>時間</dt><dd>${entry.time || '未設定'}</dd></div>
+        </dl>
+        <p>${entry.note || 'この日の予定をふたりで整えます。'}</p>
+      </div>
+      <div class="couple-list-actions">
+        <button type="button" data-calendar-date="${entry.date}">カレンダーで見る ${getIcon('chevronRight')}</button>
+        <button class="is-danger" type="button" data-delete-date-entry="${entry.id}">削除</button>
+      </div>
+    </article>
+  `;
+}
+
+function isPastDate(dateString) {
+  const target = new Date(`${dateString}T00:00:00`);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (Number.isNaN(target.getTime())) return false;
+  return target < today;
+}
+
+function renderDateList(state, uiState = {}) {
+  const activeTab = uiState.dateListTab === 'past' ? 'past' : 'upcoming';
+  const allEntries = (state.couple?.calendarEntries || []);
+  const entries = allEntries
+    .filter((entry) => activeTab === 'past' ? isPastDate(entry.date) : !isPastDate(entry.date))
+    .slice()
+    .sort((a, b) => activeTab === 'past'
+      ? String(b.date || '').localeCompare(String(a.date || ''))
+      : String(a.date || '').localeCompare(String(b.date || '')));
+
+  return `
+    ${renderBrand()}
+    <button class="couple-list-back" type="button" data-list-back>${getIcon('returnLeft')} 戻る</button>
+    <header class="couple-page-title">
+      <h1>デート予定一覧</h1>
+      <p>カレンダーに追加した予定をまとめて確認できます。</p>
+    </header>
+    <div class="couple-date-tabs" role="tablist" aria-label="予定の表示切り替え">
+      <button class="${activeTab === 'upcoming' ? 'is-active' : ''}" type="button" data-date-list-tab="upcoming" role="tab" aria-selected="${activeTab === 'upcoming'}">これから</button>
+      <button class="${activeTab === 'past' ? 'is-active' : ''}" type="button" data-date-list-tab="past" role="tab" aria-selected="${activeTab === 'past'}">済み</button>
+    </div>
+    <section class="couple-date-list-page">
+      ${entries.length
+        ? entries.map(renderDateListEntry).join('')
+        : `
+          <section class="couple-card couple-date-detail">
+            <p class="couple-kicker">予定一覧</p>
+            <h2>${activeTab === 'past' ? '済みの予定はまだありません' : 'これからの予定はまだありません'}</h2>
+            <p>${activeTab === 'past' ? '日付が過ぎた予定がここに表示されます。' : 'デートを追加すると、ここに一覧で表示されます。'}</p>
+            ${activeTab === 'upcoming' ? `
+              <div class="couple-date-detail__actions">
+                <button type="button" data-couple-view="dateAdd" data-date-add-step="1">デートを追加</button>
+              </div>
+            ` : ''}
+          </section>
+        `}
+    </section>
+  `;
+}
+
+function renderPageListEntry(post) {
+  const title = getPostTitle(post);
+  const dateText = new Date(post.createdAt).toLocaleDateString('ja-JP').replace(/\//g, '.');
+  return `
+    <article class="couple-page-list-card couple-card">
+      <button class="couple-page-list-card__media" type="button" data-open-preview="${post.id}" aria-label="${title}を開く">
+        ${post.imageData ? `<img src="${post.imageData}" alt="${title}" />` : '<span>pages</span>'}
+      </button>
+      <div>
+        <p class="couple-kicker">${dateText}</p>
+        <h2>${title}</h2>
+        <p>${String(post.caption || '作成済みページ').split('/').slice(1).join(' / ') || 'ふたりの記録ページ'}</p>
+        <div class="couple-list-actions">
+          <button type="button" data-open-preview="${post.id}">ページを見る ${getIcon('chevronRight')}</button>
+          <button class="is-danger" type="button" data-delete-page-entry="${post.id}">削除</button>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function renderPageList(state) {
+  const posts = (state.posts || [])
+    .slice()
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  return `
+    ${renderBrand()}
+    <button class="couple-list-back" type="button" data-list-back>${getIcon('returnLeft')} 戻る</button>
+    <header class="couple-page-title">
+      <h1>pages</h1>
+      <p>作成済みページを一覧で確認できます。</p>
+    </header>
+    <section class="couple-date-list-page">
+      ${posts.length
+        ? posts.map(renderPageListEntry).join('')
+        : `
+          <section class="couple-card couple-date-detail">
+            <p class="couple-kicker">pages</p>
+            <h2>ページはまだありません</h2>
+            <p>ページを作ると、ここに一覧で表示されます。</p>
+            <div class="couple-date-detail__actions">
+              <button type="button" data-home-nav="compose">ページを作る</button>
+            </div>
+          </section>
+        `}
+    </section>
+  `;
+}
+
+function getDraftTitle(draft) {
+  const title = String(draft.title || draft.composeData?.headline || '').trim();
+  return title && title.toLowerCase() !== 'text' ? title : '下書きページ';
+}
+
+function renderDraftListEntry(draft) {
+  const title = getDraftTitle(draft);
+  const dateText = new Date(draft.updatedAt || draft.createdAt || Date.now()).toLocaleDateString('ja-JP').replace(/\//g, '.');
+  return `
+    <article class="couple-page-list-card couple-card">
+      <button class="couple-page-list-card__media" type="button" data-open-draft="${draft.id}" aria-label="${title}を開く">
+        ${draft.imageData ? `<img src="${draft.imageData}" alt="${title}" />` : '<span>draft</span>'}
+      </button>
+      <div>
+        <p class="couple-kicker">${dateText}</p>
+        <h2>${title}</h2>
+        <p>編集中のページ</p>
+        <div class="couple-list-actions">
+          <button type="button" data-open-draft="${draft.id}">編集する ${getIcon('chevronRight')}</button>
+          <button class="is-danger" type="button" data-delete-draft-entry="${draft.id}">削除</button>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function renderDraftList(state) {
+  const drafts = (state.drafts || [])
+    .slice()
+    .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+
+  return `
+    ${renderBrand()}
+    <button class="couple-list-back" type="button" data-list-back>${getIcon('returnLeft')} 戻る</button>
+    <header class="couple-page-title">
+      <h1>draft</h1>
+      <p>編集中のページを一覧で確認できます。</p>
+    </header>
+    <section class="couple-date-list-page">
+      ${drafts.length
+        ? drafts.map(renderDraftListEntry).join('')
+        : `
+          <section class="couple-card couple-date-detail">
+            <p class="couple-kicker">draft</p>
+            <h2>下書きはまだありません</h2>
+            <p>保存した下書きが、ここに一覧で表示されます。</p>
+            <div class="couple-date-detail__actions">
+              <button type="button" data-home-nav="compose">ページを作る</button>
+            </div>
+          </section>
+        `}
+    </section>
+  `;
+}
+
+function renderTodoListEntry(todo) {
+  return `
+    <article class="couple-todo-list-card couple-card ${todo.done ? 'is-done' : ''}">
+      <div>
+        <h2>${todo.title || 'やりたいこと'}</h2>
+      </div>
+      <div class="couple-todo-controls">
+        <button
+          class="couple-todo-check"
+          type="button"
+          data-toggle-couple-todo="${todo.id}"
+          aria-label="${todo.title || 'やりたいこと'}を${todo.done ? '未完了' : '完了'}にする"
+          aria-pressed="${todo.done}"
+        >
+          ${todo.done ? '✓' : ''}
+        </button>
+        <button class="couple-todo-delete" type="button" data-delete-todo-entry="${todo.id}">削除</button>
+      </div>
+    </article>
+  `;
+}
+
+function renderTodoInputCard() {
+  return `
+    <form class="couple-todo-input-card couple-card" data-todo-form>
+      <input name="todoTitle" type="text" maxlength="50" placeholder="" autocomplete="off" required />
+      <div>
+        <button type="button" data-todo-input-cancel>キャンセル</button>
+        <button type="submit">決定</button>
+      </div>
+    </form>
+  `;
+}
+
+function renderTodoList(state, uiState = {}) {
+  const todos = state.couple?.todos || [];
+
+  return `
+    ${renderBrand()}
+    <button class="couple-list-back" type="button" data-list-back>${getIcon('returnLeft')} 戻る</button>
+    <header class="couple-page-title">
+      <h1>やりたいことリスト</h1>
+    </header>
+    <section class="couple-date-list-page">
+      ${uiState.todoInputOpen ? renderTodoInputCard() : ''}
+      ${todos.length
+        ? todos.map(renderTodoListEntry).join('')
+        : `
+          <section class="couple-card couple-date-detail">
+            <p class="couple-kicker">todo</p>
+            <h2>やりたいことはまだありません</h2>
+            <p>ふたりで叶えたいことが、ここに一覧で表示されます。</p>
+          </section>
+        `}
+    </section>
+    <button class="couple-todo-fab" type="button" data-open-todo-input aria-label="やりたいことを追加">+</button>
+  `;
+}
+
+function renderQuestionOption(question, option, selectedValue) {
+  return `
+    <button
+      class="couple-answer-option ${selectedValue === option.value ? 'is-selected' : ''}"
+      type="button"
+      data-couple-answer="${question.id}"
+      data-couple-answer-value="${option.value}"
+    >
+      ${option.icon ? `<span class="couple-answer-option__icon">${getIcon(option.icon)}</span>` : ''}
+      <span>${option.label}</span>
+      ${selectedValue === option.value ? '<i aria-hidden="true">✓</i>' : ''}
+    </button>
+  `;
+}
+
+function renderQuestion(state) {
+  const couple = state.couple || {};
+  const { answeredCount, nextQuestion } = getQuestionProgress(couple);
+  if (!nextQuestion) return renderRecommendations(state);
+  const selectedValue = couple.answers?.you?.[nextQuestion.id] || '';
+
+  return `
+    ${renderBrand()}
+    <div class="couple-progress">
+      <strong>${answeredCount + 1}</strong><span>/ ${COUPLE_QUESTIONS.length}</span>
+      <div><span style="width: ${((answeredCount + 1) / COUPLE_QUESTIONS.length) * 100}%"></span></div>
+    </div>
+    <section class="couple-card couple-question-card">
+      <h1>${nextQuestion.title}</h1>
+      <div class="couple-answer-grid ${nextQuestion.options.length <= 3 ? 'couple-answer-grid--compact' : ''}">
+        ${nextQuestion.options.map((option) => renderQuestionOption(nextQuestion, option, selectedValue)).join('')}
+      </div>
+    </section>
+    <section class="couple-card couple-wait-card">
+      <span aria-hidden="true">${getIcon('heart')}</span>
+      <p>相手の回答が届くと、おすすめが表示されます</p>
+    </section>
+  `;
+}
+
+function renderMoodSummary(couple = {}) {
+  const labelByValue = Object.fromEntries(COUPLE_QUESTIONS.flatMap((question) => question.options.map((option) => [option.value, option.label])));
+  return `
+    <section class="couple-card couple-mood-summary">
+      <p>ふたりの気分</p>
+      <div>
+        <span>${labelByValue[couple.answers?.you?.mood] || '未回答'}</span>
+        <strong aria-hidden="true">♥</strong>
+        <span>${labelByValue[couple.answers?.partner?.mood] || '未回答'}</span>
+      </div>
+    </section>
+  `;
+}
+
+function renderPlan(plan, calendarEntries = []) {
+  const added = calendarEntries.some((entry) => entry.planId === plan.id);
+  return `
+    <article class="couple-plan-card couple-card">
+      <img src="${plan.image}" alt="${plan.title}" />
+      <div>
+        <h3>${plan.title}</h3>
+        <p>${plan.copy}</p>
+        <div class="couple-plan-card__tags">${plan.tags.map((tag) => `<span>${tag}</span>`).join('')}</div>
+        <button type="button" data-add-date-plan="${plan.id}" ${added ? 'disabled' : ''}>
+          ${added ? '追加済み' : 'この日に追加'} ${getIcon('chevronRight')}
+        </button>
+      </div>
+    </article>
+  `;
+}
+
+function renderRecommendations(state) {
+  const couple = state.couple || {};
+  const plans = getCoupleRecommendations(couple);
+  return `
+    ${renderBrand()}
+    <header class="couple-page-title">
+      <h1>おすすめデート</h1>
+      <p>ふたりの気分から、ぴったりのプランを選びました。</p>
+    </header>
+    ${renderMoodSummary(couple)}
+    <section class="couple-plan-list">
+      <h2>ふたりに合うプラン</h2>
+      ${plans.map((plan) => renderPlan(plan, couple.calendarEntries || [])).join('')}
+      <button class="couple-refresh" type="button" data-reset-couple-answers>別のプランを探す</button>
+    </section>
+  `;
+}
+
+function renderCalendar(state, uiState) {
+  return `
+    ${renderBrand()}
+    <button class="date-add-entry-button" type="button" data-couple-view="dateAdd" data-date-add-step="1">デートを追加</button>
+    ${renderCalendarGrid(state, uiState)}
+    ${renderDateDetail(state, uiState)}
+    <section class="couple-card couple-question-entry">
+      <div>
+        <p class="couple-kicker">デートの種</p>
+        <h2>次の予定の前に、ふたりの気分を合わせる</h2>
+      </div>
+      <button type="button" data-couple-view="question">質問をはじめる</button>
+    </section>
+  `;
+}
+
+export function renderSearch(state, uiState = {}) {
+  const view = uiState.coupleView || 'calendar';
+  const body = view === 'question'
+    ? renderQuestion(state)
+    : view === 'recommend'
+      ? renderRecommendations(state)
+      : view === 'dateAdd'
+        ? renderDateAdd(state, uiState)
+        : view === 'dateList'
+          ? renderDateList(state, uiState)
+          : view === 'pageList'
+            ? renderPageList(state)
+            : view === 'draftList'
+              ? renderDraftList(state)
+              : view === 'todoList'
+                ? renderTodoList(state, uiState)
+                : renderCalendar(state, uiState);
+
+  return `
+    <section class="page page--search couple-calendar-page">
+      <div class="couple-screen">${body}</div>
+    </section>
+  `;
+}

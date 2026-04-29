@@ -1,0 +1,62 @@
+export function getIcon(name) {
+  const imageIcons = {
+    timeline: 'image/icon/feature/timeline.png',
+    search: 'image/icon/feature/search.png',
+    searchLine: 'image/icon/feature/search.png',
+    settings: 'image/icon/feature/settings.png',
+    profile: 'image/icon/feature/profile.png',
+    compose: 'image/icon/feature/add.png',
+    post: 'image/icon/feature/post.png',
+    heart: 'image/icon/feature/like.png',
+    comment: 'image/icon/feature/comment.png',
+    save: 'image/icon/feature/save.png',
+    trash: 'image/icon/feature/delete.png',
+    edit: 'image/icon/feature/edit.png'
+  };
+
+  if (imageIcons[name]) {
+    return `<img class="feature-icon feature-icon--${name}" src="${imageIcons[name]}" alt="" aria-hidden="true" />`;
+  }
+
+  const icons = {
+    home: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4.8 10.6 12 4.8l7.2 5.8"/><path d="M6.8 9.9V19h10.4V9.9"/><path d="M9.7 19v-5.4h4.6V19"/></svg>',
+    timeline: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.22" stroke-linecap="round" stroke-linejoin="round"><path d="M10.7 5.2c-1 .98-2.35 2.95-2.35 4.95 0 1.9 1.01 3.21 3.22 4.53 2.07 1.24 3.03 2.4 3.03 4.17 0 1.66-1.08 3.18-2.02 4.12"/><circle cx="12.06" cy="4.48" r="1.38"/><circle cx="12.18" cy="11.98" r="1.38"/><circle cx="11.92" cy="19.45" r="1.38"/></svg>',
+    search: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.22" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.65" cy="10.65" r="5.85"/><path d="m15.1 15.1 4.25 4.25"/></svg>',
+    sliders: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M4 17h16"/><circle cx="15.5" cy="7" r="2.1" fill="white" stroke="currentColor"/><circle cx="8.5" cy="17" r="2.1" fill="white" stroke="currentColor"/></svg>',
+    filter: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round"><path d="M4.8 6.2h14.4l-5.7 6.6v4.5l-3 1.5v-6Z"/></svg>',
+    settings: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.22" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.6c1.16 0 1.62 1.14 1.86 2.03.16.58.63 1.01 1.25 1.14.92.19 2.03.44 2.64 1.29.62.86.17 1.88-.18 2.7-.26.59-.19 1.16.13 1.69.44.74.95 1.67.52 2.53-.44.87-1.49 1.16-2.39 1.42-.64.18-1.11.55-1.29 1.18-.25.88-.69 2.06-1.89 2.06s-1.64-1.18-1.89-2.06c-.18-.63-.65-1-1.29-1.18-.9-.26-1.95-.55-2.39-1.42-.43-.86.08-1.79.52-2.53.32-.53.39-1.1.13-1.69-.35-.82-.8-1.84-.18-2.7.61-.85 1.72-1.1 2.64-1.29.62-.13 1.09-.56 1.25-1.14.24-.89.7-2.03 1.86-2.03Z"/><circle cx="12" cy="12" r="3.02"/></svg>',
+    bell: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8.6 17.3h6.8"/><path d="M10.1 19.2a1.9 1.9 0 0 0 3.8 0"/><path d="M6.8 16.9c1.1-1.1 1.6-2.5 1.6-4.6V10a3.6 3.6 0 1 1 7.2 0v2.3c0 2.1.5 3.5 1.6 4.6"/><path d="M12 4.4v1.1"/></svg>',
+    more: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><circle cx="6.5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="17.5" cy="12" r="1.3"/></svg>',
+    compose: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.22" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="6.78"/><path d="M12 9.2v5.6"/><path d="M9.2 12h5.6"/></svg>',
+    post: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.22" stroke-linecap="round" stroke-linejoin="round"><path d="M15.55 4.95H9.2a2.68 2.68 0 0 0-2.68 2.68v7.17a2.68 2.68 0 0 0 2.68 2.68h7.35a2.68 2.68 0 0 0 2.68-2.68V11.6"/><path d="M12.7 11.35 19.4 4.65"/><path d="M15.48 4.65h3.92v3.92"/></svg>',
+    issue: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12a2 2 0 0 1 2 2v12H8a2 2 0 0 0-2 2z"/><path d="M6 4a2 2 0 0 0-2 2v14h14"/></svg>',
+    profile: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.22" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.05" r="3.05"/><path d="M5.38 19.3c.1-3.62 3.08-6.46 6.62-6.46 3.54 0 6.52 2.84 6.62 6.46"/></svg>',
+    searchLine: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.22" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.65" cy="10.65" r="5.85"/><path d="m15.1 15.1 4.25 4.25"/></svg>',
+    chevronRight: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 6 7-6 7"/></svg>',
+    pin: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s5.2-5 5.2-9.2A5.2 5.2 0 1 0 6.8 10.8C6.8 15 12 20 12 20Z"/><circle cx="12" cy="10.8" r="1.8"/></svg>',
+    sunLine: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.8"/><path d="M12 2.9v3M12 18.1v3M21.1 12h-3M5.9 12h-3M18.4 5.6l-2.2 2.2M7.8 16.2l-2.2 2.2M18.4 18.4l-2.2-2.2M7.8 7.8 5.6 5.6"/></svg>',
+    cloudLine: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round"><path d="M7.4 18.2h9.3a3.5 3.5 0 1 0-.7-6.9 4.8 4.8 0 0 0-9.2 1.5A3 3 0 0 0 7.4 18.2Z"/></svg>',
+    moonLine: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round"><path d="M19 13.5A7.5 7.5 0 0 1 10.5 5 7.8 7.8 0 1 0 19 13.5Z"/></svg>',
+    sparkleLine: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3.6 1.5 4.2 4.2 1.5-4.2 1.5L12 15l-1.5-4.2-4.2-1.5 4.2-1.5Z"/><path d="m18.1 14.9.8 2.1 2.1.8-2.1.8-.8 2.1-.8-2.1-2.1-.8 2.1-.8Z"/></svg>',
+    heart: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="4.7"/><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="9.2" opacity="0.68"/></svg>',
+    comment: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M4.8 12.2c0-3.4 2.8-6.1 6.2-6.1 3.3 0 5.8 2.4 5.8 5.4 0 3.1-2.6 5.4-6.2 5.4-.8 0-1.6-.1-2.3-.4l-3.3 1 .9-2.7c-.7-.8-1.1-1.7-1.1-2.6Z"/><path d="m14.2 8.3 5 1.1-2 1.9 1.9 5-4.9-1.9-1.9 2Z" opacity="0.8"/></svg>',
+    save: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.6 18.2 7v10L12 20.4 5.8 17V7Z"/><path d="M12 3.6v6.3M18.2 7 12 9.9 5.8 7"/><path d="M12 9.9v10.5"/><circle cx="12" cy="12" r="2.1" fill="currentColor" stroke="none"/></svg>',
+    tag: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5 11.5 20 4 12.5V5h7.5Z"/><circle cx="15.5" cy="8.5" r="1"/></svg>',
+    spark: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z"/></svg>',
+    arrowLeft: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 5.5 9 12l6.5 6.5"/><path d="M9.5 12h9"/></svg>',
+    undo: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round"><path d="M9.2 7.2 5.4 11l3.8 3.8"/><path d="M5.8 11h8.7a4.2 4.2 0 1 1 0 8.4H11"/></svg>',
+    redo: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round"><path d="m14.8 7.2 3.8 3.8-3.8 3.8"/><path d="M18.2 11H9.5a4.2 4.2 0 1 0 0 8.4H13"/></svg>',
+    returnLeft: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.8 6.8 9.3 12l5.5 5.2"/></svg>',
+    recommended: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5.3" r="2.5" fill="currentColor" stroke="none"/><circle cx="5.8" cy="17.6" r="2.6" fill="currentColor" stroke="none"/><circle cx="18.2" cy="17.6" r="2.6" fill="currentColor" stroke="none"/><path d="M7.9 15.8 10.6 8.1"/><path d="M16.1 15.8 13.4 8.1"/><path d="M8.8 17.6h6.4"/></svg>',
+    follow: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.3" cy="17.5" r="3.1" fill="currentColor" stroke="none"/><circle cx="16.4" cy="8.2" r="2.5" fill="currentColor" stroke="none"/><path d="M5.1 18.7c1.3-4.2 5-7.2 9.5-7.2 1.5 0 3 .3 4.2.9"/><path d="M5 18.9c1.8 0 3.3-.6 5.1-1.7 3-1.9 5.1-4.7 7.1-8"/><path d="m17.6 6.2 1.9 1.1-1 2.1" /></svg>',
+    close: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6 18 18M18 6 6 18"/></svg>',
+    image: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="m8 15 2.5-2.5L13 15l2.5-3 2.5 3"/><circle cx="9" cy="9" r="1.2"/></svg>',
+    trash: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.22" stroke-linecap="round" stroke-linejoin="round"><path d="M7.2 6.55h9.6"/><path d="M10.1 4.85h3.8"/><path d="m7.85 6.55.66 11.02a1.6 1.6 0 0 0 1.59 1.5h3.8a1.6 1.6 0 0 0 1.59-1.5l.66-11.02"/><path d="M10.45 9.15v6.55"/><path d="M13.55 9.15v6.55"/></svg>',
+    edit: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.22" stroke-linecap="round" stroke-linejoin="round"><path d="M15.45 4.98H9.18A2.66 2.66 0 0 0 6.52 7.64v7.18a2.66 2.66 0 0 0 2.66 2.66h7.64a2.66 2.66 0 0 0 2.66-2.66v-4.35"/><path d="m12.7 13.75.62-2.93 5.35-5.35a1.32 1.32 0 0 1 1.87 0l.26.26a1.32 1.32 0 0 1 0 1.87l-5.35 5.35-2.75.8Z"/><path d="m17.9 6.25 1.85 1.85"/></svg>',
+    drag: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M4 12h16"/><path d="m12 4-2.8 2.8M12 4l2.8 2.8M20 12l-2.8-2.8M20 12l-2.8 2.8M12 20l-2.8-2.8M12 20l2.8-2.8M4 12l2.8-2.8M4 12l2.8 2.8"/></svg>',
+    alignLeft: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M5 7h12"/><path d="M5 12h9"/><path d="M5 17h13"/></svg>',
+    alignCenter: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 7h12"/><path d="M8 12h8"/><path d="M5 17h14"/></svg>',
+    alignRight: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M7 7h12"/><path d="M10 12h9"/><path d="M6 17h13"/></svg>'
+  };
+  return icons[name] || '';
+}

@@ -1,0 +1,237 @@
+#app {
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: clip;
+}
+
+.app-shell {
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--shell-bg);
+  color: var(--text);
+  position: relative;
+  box-shadow: none;
+  overflow-x: clip;
+  overflow-y: hidden;
+}
+
+.app-shell::before,
+.app-shell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+.app-shell::before {
+  z-index: 0;
+}
+
+.app-shell::after {
+  z-index: 0;
+}
+
+.app-shell > * {
+  position: relative;
+  z-index: 1;
+}
+
+.app-shell--timeline {
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.app-shell--home {
+  background: var(--shell-bg);
+  overflow: hidden;
+}
+
+.app-shell--compose {
+  background: #ffffff;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.app-shell--with-bottom-nav #modalRoot {
+  z-index: 18;
+}
+
+.screen-area {
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 18px clamp(14px, 3vw, 28px) 24px;
+  scroll-padding-bottom: 20px;
+  overflow: hidden;
+}
+
+.screen-area--home {
+  padding: 0;
+  background: transparent;
+  overflow: hidden;
+  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+}
+
+.screen-area--timeline {
+  padding: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+}
+
+.screen-area--with-bottom-nav {
+  padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 8px);
+}
+
+.screen-area--search {
+  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+.screen-area--profile {
+  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  padding: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+.screen-area--post {
+  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  padding: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding-top: 52px;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+.screen-area--invite {
+  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  padding: 0;
+  overflow: hidden;
+}
+
+.screen-area--compose {
+  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  padding: 0;
+}
+
+.page {
+  display: grid;
+  gap: 18px;
+}
+
+.page-header {
+  display: grid;
+  gap: 4px;
+  padding-top: 6px;
+}
+
+.page-header:not(.page-header--with-back) {
+  display: none;
+}
+
+.page-header--with-back > :not(.page-back):not(.page-header__actions) {
+  display: none;
+}
+
+.page-header__mini {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.page-header__title {
+  font-family: 'Zen Old Mincho', serif;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.section-block,
+.profile-card,
+.profile-form,
+.issue-form,
+.empty-panel,
+.search-box {
+  background:
+    var(--panel-bg) padding-box,
+    linear-gradient(120deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)) padding-box,
+    var(--panel-border) border-box;
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  color: var(--text);
+}
+
+.section-block,
+.profile-form,
+.issue-form,
+.empty-panel,
+.search-box {
+  padding: 16px;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.section-head h3 {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.empty-panel {
+  min-height: 180px;
+  place-items: center;
+  text-align: center;
+  display: grid;
+  gap: 8px;
+}
+
+.empty-panel__title {
+  font-weight: 700;
+}
+
+.empty-panel__copy,
+.empty-copy {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.75;
+}

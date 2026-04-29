@@ -1,0 +1,36 @@
+:root {
+  --bg: #ffffff;
+  --bg-soft: #ffffff;
+  --paper: rgba(255, 253, 251, 0.92);
+  --line: rgba(234, 216, 207, 0.92);
+  --line-strong: rgba(214, 140, 147, 0.34);
+  --text: #4e3d36;
+  --muted: #8d7569;
+  --pink: #f3d7d8;
+  --pink-strong: #d68c93;
+  --beige: #efdcc8;
+  --cream: #f8efe4;
+  --rose: #f0c3c5;
+  --shadow: 0 14px 28px rgba(118, 86, 70, 0.08);
+  --panel-bg: linear-gradient(180deg, rgba(255, 253, 251, 0.94), rgba(255, 247, 242, 0.96));
+  --panel-border: linear-gradient(120deg, rgba(255, 255, 255, 0.94), rgba(245, 225, 214, 0.92) 46%, rgba(239, 206, 211, 0.94));
+  --control-bg: rgba(248, 239, 232, 0.92);
+  --control-bg-soft: rgba(249, 240, 232, 0.74);
+  --control-border: rgba(229, 206, 195, 0.92);
+  --control-text: #4e3d36;
+  --control-accent-bg: #111111;
+  --control-accent-solid: rgba(17, 17, 17, 0.92);
+  --control-accent-border: rgba(17, 17, 17, 0.92);
+  --control-accent-text: #ffffff;
+  --input-bg: rgba(255, 255, 255, 0.92);
+  --input-border: rgba(220, 197, 185, 0.96);
+  --surface-soft: rgba(255, 253, 249, 0.86);
+  --surface-soft-border: rgba(233, 217, 207, 0.9);
+  --shell-bg:
+    linear-gradient(180deg, #ffffff 0%, #ffffff 100%);
+  --radius-lg: 24px;
+  --radius-md: 18px;
+  --radius-sm: 14px;
+  --page-width: 430px;
+  --bottom-nav-height: 84px;
+}

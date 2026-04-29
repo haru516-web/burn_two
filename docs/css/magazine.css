@@ -1,0 +1,108 @@
+.issue-form {
+  display: grid;
+  gap: 16px;
+}
+
+.issue-post-grid {
+  column-count: 2;
+  column-gap: 0;
+}
+
+.issue-post-option {
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+  width: 100%;
+  margin-bottom: 10px;
+  break-inside: avoid;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.issue-post-option input {
+  position: absolute;
+  opacity: 0;
+}
+
+.issue-post-option img {
+  width: 100%;
+  aspect-ratio: 3 / 5;
+  object-fit: cover;
+  border-radius: 14px;
+}
+
+.issue-post-option__meta {
+  display: grid;
+  gap: 2px;
+}
+
+.issue-post-option__meta strong {
+  font-size: 12px;
+}
+
+.issue-post-option__meta span {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.issue-post-option input:checked + img {
+  outline: 3px solid rgba(81, 198, 255, 0.7);
+}
+
+.issue-list {
+  display: grid;
+  gap: 12px;
+}
+
+.issue-card {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow);
+}
+
+.issue-card--soft {
+  background: linear-gradient(180deg, rgba(13, 18, 26, 0.96), rgba(11, 15, 22, 0.92));
+}
+
+.issue-card--cream {
+  background: linear-gradient(180deg, rgba(13, 19, 24, 0.96), rgba(10, 14, 19, 0.92));
+}
+
+.issue-card--rose {
+  background: linear-gradient(180deg, rgba(15, 17, 28, 0.96), rgba(10, 13, 20, 0.92));
+}
+
+.issue-card__eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.issue-card__title {
+  font-family: 'Zen Old Mincho', serif;
+  font-size: 24px;
+}
+
+.issue-card__subtitle,
+.issue-card__count {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.issue-card__thumbs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.issue-card__thumbs img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: 12px;
+}
