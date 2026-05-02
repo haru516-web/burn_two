@@ -1162,14 +1162,14 @@
   position: absolute;
   left: 0;
   right: 0;
-  top: -18px;
+  top: -22px;
   display: grid;
   grid-template-columns: minmax(16px, 1fr) auto minmax(16px, 1fr);
   align-items: center;
   gap: 8px;
   color: #302623;
   font-family: "Cormorant Garamond", "Times New Roman", serif;
-  font-size: clamp(0.68rem, 2vw, 0.95rem);
+  font-size: clamp(0.82rem, 2.45vw, 1.15rem);
   line-height: 1;
   text-align: center;
 }
@@ -1182,7 +1182,7 @@
 .record-template-slot--text {
   display: grid;
   align-content: start;
-  gap: 6px;
+  gap: 8px;
   padding: 5.5%;
   overflow: visible;
   background: transparent;
@@ -1204,15 +1204,15 @@
   border-bottom: 1px solid rgba(48, 38, 35, 0.24);
   color: #6f4d48;
   font-family: "Shippori Mincho", "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", serif;
-  font-size: clamp(0.68rem, 2.1vw, 0.92rem);
+  font-size: clamp(0.82rem, 2.55vw, 1.12rem);
   font-weight: 600;
   line-height: 1.35;
 }
 
 .record-template-slot--text strong svg {
   flex: 0 0 auto;
-  width: 15px;
-  height: 15px;
+  width: 18px;
+  height: 18px;
   color: #b46a62;
 }
 
@@ -1221,8 +1221,8 @@
   overflow: visible;
   color: #4f4440;
   font-family: "Shippori Mincho", "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", serif;
-  font-size: clamp(0.5rem, 1.45vw, 0.64rem);
-  line-height: 1.65;
+  font-size: clamp(0.64rem, 1.85vw, 0.82rem);
+  line-height: 1.7;
 }
 
 .record-template-slot.is-empty {

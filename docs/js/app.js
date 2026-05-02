@@ -6941,7 +6941,7 @@ function drawRecordTime(ctx, time, rect) {
   ctx.lineTo(rect.x + rect.width, y);
   ctx.stroke();
   ctx.fillStyle = '#302623';
-  ctx.font = '34px "Cormorant Garamond", "Times New Roman", serif';
+  ctx.font = '44px "Cormorant Garamond", "Times New Roman", serif';
   drawCenteredText(ctx, String(time || ''), centerX, y - 1, lineGap * 1.7);
   ctx.restore();
 }
@@ -6994,23 +6994,23 @@ function drawRecordTextSlot(ctx, memory, rect) {
   ctx.save();
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
-  drawLocationPin(ctx, left + 18, top + 27, 34);
+  drawLocationPin(ctx, left + 20, top + 31, 40);
   ctx.fillStyle = '#6f4d48';
-  ctx.font = '600 34px "Shippori Mincho", "Noto Serif JP", serif';
-  ctx.fillText(place, left + 48, top + 4, maxWidth - 48);
+  ctx.font = '600 42px "Shippori Mincho", "Noto Serif JP", serif';
+  ctx.fillText(place, left + 56, top + 2, maxWidth - 56);
   const underlineWidth = Math.min(maxWidth, Math.max(118, ctx.measureText(place).width + 52));
   ctx.strokeStyle = 'rgba(48, 38, 35, 0.24)';
   ctx.lineWidth = 1.4;
   ctx.beginPath();
-  ctx.moveTo(left, top + 58);
-  ctx.lineTo(left + underlineWidth, top + 58);
+  ctx.moveTo(left, top + 70);
+  ctx.lineTo(left + underlineWidth, top + 70);
   ctx.stroke();
 
   ctx.fillStyle = '#4f4440';
-  ctx.font = '26px "Shippori Mincho", "Noto Serif JP", serif';
+  ctx.font = '32px "Shippori Mincho", "Noto Serif JP", serif';
   const memoLines = wrapCanvasText(ctx, memo, maxWidth);
-  const lineHeight = 42;
-  let y = top + 88;
+  const lineHeight = 50;
+  let y = top + 106;
   const maxY = rect.y + rect.height - padding;
   memoLines.forEach((line) => {
     if (y + lineHeight <= maxY) {
