@@ -6,6 +6,9 @@ const template03 = new URL('../../references/template_for_record/template03.png'
 const template04 = new URL('../../references/template_for_record/template04.png', import.meta.url).href;
 const template05 = new URL('../../references/template_for_record/template05.png', import.meta.url).href;
 const template06 = new URL('../../references/template_for_record/template06.png', import.meta.url).href;
+const background01 = new URL('../../references/record_background/back_ex1.png', import.meta.url).href;
+const background02 = new URL('../../references/record_background/back_ex2.png', import.meta.url).href;
+const background03 = new URL('../../references/record_background/back_ex3.png', import.meta.url).href;
 
 const rect = (x, y, width, height) => ({ x, y, width, height });
 
@@ -136,6 +139,19 @@ export const RECORD_TEMPLATES = [
 
 export const DEFAULT_RECORD_TEMPLATE = RECORD_TEMPLATES[0].id;
 
+export const RECORD_BACKGROUNDS = [
+  { id: 'none', label: '背景なし', src: '' },
+  { id: 'record-background-01', label: 'Background 01', src: background01 },
+  { id: 'record-background-02', label: 'Background 02', src: background02 },
+  { id: 'record-background-03', label: 'Background 03', src: background03 },
+];
+
+export const DEFAULT_RECORD_BACKGROUND = RECORD_BACKGROUNDS[0].id;
+
 export function getRecordTemplateById(templateId) {
   return RECORD_TEMPLATES.find((template) => template.id === templateId) || RECORD_TEMPLATES[0];
+}
+
+export function getRecordBackgroundById(backgroundId) {
+  return RECORD_BACKGROUNDS.find((background) => background.id === backgroundId) || RECORD_BACKGROUNDS[0];
 }

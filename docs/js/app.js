@@ -12,7 +12,12 @@ import { renderProfile } from './pages/profile.js';
 import { renderPostDetail } from './pages/postDetail.js';
 import { renderRecord } from './pages/record.js';
 import { DEFAULT_COMPOSE_TEMPLATE, getComposeTemplateById } from './templates/index.js';
-import { DEFAULT_RECORD_TEMPLATE, getRecordTemplateById } from './templates/recordTemplates.js';
+import {
+  DEFAULT_RECORD_BACKGROUND,
+  DEFAULT_RECORD_TEMPLATE,
+  getRecordBackgroundById,
+  getRecordTemplateById,
+} from './templates/recordTemplates.js';
 import {
   FIXED_TEMPLATE_SLOT_KEYS,
   getFixedTemplateLayout,
@@ -78,6 +83,7 @@ const uiState = {
   recordStage: 'home',
   recordDate: null,
   recordTemplateId: DEFAULT_RECORD_TEMPLATE,
+  recordBackgroundId: DEFAULT_RECORD_BACKGROUND,
   recordTitle: '',
   recordDraft: null,
   recordSelectedIds: [],
@@ -638,6 +644,7 @@ function navigate(screen) {
     uiState.recordStage = 'home';
     uiState.recordDate = null;
     uiState.recordTemplateId = DEFAULT_RECORD_TEMPLATE;
+    uiState.recordBackgroundId = DEFAULT_RECORD_BACKGROUND;
     uiState.recordTitle = '';
     uiState.recordDraft = null;
     uiState.recordSelectedIds = [];
@@ -662,6 +669,7 @@ function navigate(screen) {
     uiState.recordStage = 'home';
     uiState.recordDate = null;
     uiState.recordTemplateId = DEFAULT_RECORD_TEMPLATE;
+    uiState.recordBackgroundId = DEFAULT_RECORD_BACKGROUND;
     uiState.recordTitle = '';
     uiState.recordDraft = null;
     uiState.recordSelectedIds = [];
@@ -1794,6 +1802,7 @@ function bindTimelineEvents() {
       uiState.recordDraft = null;
       uiState.recordEditingId = null;
       uiState.recordSelectedIds = [];
+      uiState.recordBackgroundId = DEFAULT_RECORD_BACKGROUND;
       uiState.screen = 'record';
       render();
     });
@@ -7095,6 +7104,11 @@ function recordSlotToCanvasRect(slot, width, height) {
   };
 }
 
+function formatRecordPageDate(dateKey = getTodayDateKey()) {
+  const date = parseDateKey(dateKey || getTodayDateKey());
+  return `${date.year}.${String(date.month).padStart(2, '0')}.${String(date.day).padStart(2, '0')}`;
+}
+
 function loadCanvasImage(src) {
   return new Promise((resolve) => {
     if (!src) {
@@ -7283,6 +7297,7 @@ async function renderRecordPageToCanvasDataUrl() {
   const memories = getRecordSelectedMemoriesForExport();
   if (memories.length !== 3) return '';
   const template = getRecordTemplateById(uiState.recordTemplateId || DEFAULT_RECORD_TEMPLATE);
+  const background = getRecordBackgroundById(uiState.recordBackgroundId || DEFAULT_RECORD_BACKGROUND);
   const title = String(uiState.recordTitle || '').trim() || 'A day to remember';
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -7292,6 +7307,19 @@ async function renderRecordPageToCanvasDataUrl() {
 
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, width, height);
+
+  const backgroundImage = background.src ? await loadCanvasImage(background.src) : null;
+  if (backgroundImage) {
+    drawCoverImage(ctx, backgroundImage, { x: 0, y: 0, width, height });
+  }
+
+  ctx.save();
+  ctx.fillStyle = 'rgba(48, 38, 35, 0.72)';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'top';
+  ctx.font = '500 34px "Cormorant Garamond", "Times New Roman", serif';
+  ctx.fillText(formatRecordPageDate(uiState.recordDate || getTodayDateKey()), width * 0.912, height * 0.049, width * 0.28);
+  ctx.restore();
 
   if (template.titleSlot) {
     const titleRect = recordSlotToCanvasRect(template.titleSlot, width, height);
@@ -7406,6 +7434,7 @@ async function saveRecordGeneratedPage({ publish = false } = {}) {
         source: 'record',
         recordMemoryIds: selectedIds.slice(0, 3),
         recordTemplateId: uiState.recordTemplateId || DEFAULT_RECORD_TEMPLATE,
+        recordBackgroundId: uiState.recordBackgroundId || DEFAULT_RECORD_BACKGROUND,
         title,
       },
     });
@@ -7419,6 +7448,7 @@ async function saveRecordGeneratedPage({ publish = false } = {}) {
         source: 'record',
         recordMemoryIds: selectedIds.slice(0, 3),
         recordTemplateId: uiState.recordTemplateId || DEFAULT_RECORD_TEMPLATE,
+        recordBackgroundId: uiState.recordBackgroundId || DEFAULT_RECORD_BACKGROUND,
         title,
       },
     });
@@ -7432,6 +7462,7 @@ async function saveRecordGeneratedPage({ publish = false } = {}) {
   uiState.recordDraft = null;
   uiState.recordEditingId = null;
   uiState.recordSelectedIds = [];
+  uiState.recordBackgroundId = DEFAULT_RECORD_BACKGROUND;
   uiState.recordTitle = '';
   render();
   return true;
@@ -7542,13 +7573,30 @@ function bindRecordEvents() {
   document.querySelectorAll('[data-record-toggle-memory]').forEach((button) => {
     button.addEventListener('click', () => {
       const id = button.dataset.recordToggleMemory;
-      const selected = new Set(uiState.recordSelectedIds || []);
-      if (selected.has(id)) {
-        selected.delete(id);
-      } else if (selected.size < 3) {
-        selected.add(id);
+      const selectedIds = (uiState.recordSelectedIds || []).filter(Boolean).slice(0, 3);
+      const selectedIndex = selectedIds.indexOf(id);
+      if (selectedIndex >= 0) {
+        selectedIds.splice(selectedIndex, 1);
+      } else if (selectedIds.length < 3) {
+        selectedIds.push(id);
       }
-      uiState.recordSelectedIds = Array.from(selected);
+      uiState.recordSelectedIds = selectedIds;
+      renderScreen();
+    });
+  });
+
+  document.querySelectorAll('[data-record-move-memory]').forEach((button) => {
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const id = button.dataset.recordMoveMemory;
+      const direction = Number(button.dataset.recordMoveDirection || 0);
+      const selectedIds = (uiState.recordSelectedIds || []).filter(Boolean).slice(0, 3);
+      const index = selectedIds.indexOf(id);
+      const nextIndex = index + direction;
+      if (index < 0 || nextIndex < 0 || nextIndex >= selectedIds.length) return;
+      [selectedIds[index], selectedIds[nextIndex]] = [selectedIds[nextIndex], selectedIds[index]];
+      uiState.recordSelectedIds = selectedIds;
       renderScreen();
     });
   });
@@ -7556,6 +7604,13 @@ function bindRecordEvents() {
   document.querySelectorAll('[data-record-template]').forEach((button) => {
     button.addEventListener('click', () => {
       uiState.recordTemplateId = button.dataset.recordTemplate || DEFAULT_RECORD_TEMPLATE;
+      renderScreen();
+    });
+  });
+
+  document.querySelectorAll('[data-record-background]').forEach((button) => {
+    button.addEventListener('click', () => {
+      uiState.recordBackgroundId = button.dataset.recordBackground || DEFAULT_RECORD_BACKGROUND;
       renderScreen();
     });
   });

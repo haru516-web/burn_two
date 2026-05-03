@@ -776,6 +776,11 @@
 }
 
 .record-select-card {
+  position: relative;
+  width: 100%;
+}
+
+.record-select-card__toggle {
   display: grid;
   grid-template-columns: minmax(118px, 34%) 1fr 48px;
   gap: 18px;
@@ -789,9 +794,47 @@
   cursor: pointer;
 }
 
-.record-select-card img {
+.record-select-card__toggle img {
   height: 126px;
   aspect-ratio: auto;
+}
+
+.record-select-card__order {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px;
+  border: 1px solid rgba(182, 106, 98, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 250, 247, 0.94);
+  box-shadow: 0 8px 20px rgba(82, 56, 48, 0.08);
+}
+
+.record-select-card__order button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  color: #9f5f58;
+  font-size: 0.86rem;
+  line-height: 1;
+}
+
+.record-select-card__order button:disabled {
+  color: #d8c6bf;
+  cursor: default;
+}
+
+.record-select-card__order span {
+  min-width: 16px;
+  color: #6f4d48;
+  font-family: ui-serif, Georgia, serif;
+  font-size: 0.82rem;
+  text-align: center;
 }
 
 .record-select-card__copy {
@@ -874,6 +917,11 @@
   text-align: left;
 }
 
+.record-background-picker {
+  margin: 22px 0 18px;
+  text-align: left;
+}
+
 .record-title-field {
   display: grid;
   gap: 8px;
@@ -937,11 +985,31 @@
   scrollbar-width: none;
 }
 
+.record-background-grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(96px, 112px);
+  gap: 12px;
+  margin-inline: -16px;
+  padding: 2px 16px 8px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-padding-inline: 16px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
 .record-template-grid::-webkit-scrollbar {
   display: none;
 }
 
-.record-template-option {
+.record-background-grid::-webkit-scrollbar {
+  display: none;
+}
+
+.record-template-option,
+.record-background-option {
   min-width: 0;
   display: grid;
   gap: 8px;
@@ -954,12 +1022,15 @@
   scroll-snap-align: start;
 }
 
-.record-template-option.is-selected {
+.record-template-option.is-selected,
+.record-background-option.is-selected {
   border-color: rgba(180, 106, 98, 0.72);
   box-shadow: 0 0 0 2px rgba(180, 106, 98, 0.14);
 }
 
-.record-template-option img {
+.record-template-option img,
+.record-background-option img,
+.record-background-option__none {
   display: block;
   width: 100%;
   aspect-ratio: 1 / 1.414;
@@ -968,7 +1039,17 @@
   background: #fff;
 }
 
-.record-template-option span {
+.record-background-option__none {
+  display: grid;
+  place-items: center;
+  border: 1px dashed rgba(78, 57, 51, 0.18);
+  color: #9a8278;
+  font-family: "Cormorant Garamond", "Times New Roman", serif;
+  font-size: 1rem;
+}
+
+.record-template-option span,
+.record-background-option span {
   font-size: 0.76rem;
 }
 
@@ -1186,11 +1267,34 @@
   object-fit: cover;
 }
 
+.record-generated-page__background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .record-template-slot {
   position: absolute;
   z-index: 1;
   box-sizing: border-box;
   overflow: hidden;
+}
+
+.record-generated-page__date {
+  position: absolute;
+  z-index: 2;
+  top: 4.9%;
+  right: 8.8%;
+  color: rgba(48, 38, 35, 0.72);
+  font-family: "Cormorant Garamond", "Times New Roman", serif;
+  font-size: clamp(0.58rem, 1.9vw, 0.82rem);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-align: right;
 }
 
 .record-template-slot--image {

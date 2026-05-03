@@ -1,5 +1,12 @@
 import { getIcon } from '../components/icons.js';
-import { DEFAULT_RECORD_TEMPLATE, getRecordTemplateById, RECORD_TEMPLATES } from '../templates/recordTemplates.js';
+import {
+  DEFAULT_RECORD_BACKGROUND,
+  DEFAULT_RECORD_TEMPLATE,
+  getRecordBackgroundById,
+  getRecordTemplateById,
+  RECORD_BACKGROUNDS,
+  RECORD_TEMPLATES,
+} from '../templates/recordTemplates.js';
 
 function escapeHtml(value = '') {
   return String(value)
@@ -31,9 +38,14 @@ function getDateFromKey(dateKey = '') {
   return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
 }
 
+function formatPageDate(dateKey = '') {
+  const date = getDateFromKey(dateKey || getTodayDateKey());
+  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
+}
+
 function getSelectedMemories(memories, selectedIds) {
-  const selected = new Set(selectedIds || []);
-  return memories.filter((memory) => selected.has(memory.id)).slice(0, 3);
+  const memoryById = new Map(memories.map((memory) => [memory.id, memory]));
+  return (selectedIds || []).map((id) => memoryById.get(id)).filter(Boolean).slice(0, 3);
 }
 
 function renderMemoryCards(memories) {
@@ -223,6 +235,27 @@ function renderRecordTemplatePicker(selectedTemplateId = DEFAULT_RECORD_TEMPLATE
   `;
 }
 
+function renderRecordBackgroundPicker(selectedBackgroundId = DEFAULT_RECORD_BACKGROUND) {
+  return `
+    <section class="record-background-picker" aria-label="record background">
+      <div class="record-template-picker__head">
+        <h2>Background</h2>
+        <p>Choose a page texture.</p>
+      </div>
+      <div class="record-background-grid">
+        ${RECORD_BACKGROUNDS.map((background) => `
+          <button class="record-background-option ${selectedBackgroundId === background.id ? 'is-selected' : ''}" type="button" data-record-background="${background.id}">
+            ${background.src
+              ? `<img src="${background.src}" alt="${background.label}" />`
+              : '<span class="record-background-option__none">None</span>'}
+            <span>${background.label}</span>
+          </button>
+        `).join('')}
+      </div>
+    </section>
+  `;
+}
+
 function renderRecordTitleInput(title = '') {
   return `
     <label class="record-title-field">
@@ -232,8 +265,13 @@ function renderRecordTitleInput(title = '') {
   `;
 }
 
-function renderRecordSelect(memories, selectedIds, selectedTemplateId = DEFAULT_RECORD_TEMPLATE, recordTitle = '') {
-  const selected = new Set(selectedIds || []);
+function renderRecordSelect(memories, selectedIds, selectedTemplateId = DEFAULT_RECORD_TEMPLATE, recordTitle = '', selectedBackgroundId = DEFAULT_RECORD_BACKGROUND) {
+  const orderedSelectedIds = (selectedIds || []).slice(0, 3);
+  const selected = new Set(orderedSelectedIds);
+  const memoryById = new Map(memories.map((memory) => [memory.id, memory]));
+  const selectedMemories = orderedSelectedIds.map((id) => memoryById.get(id)).filter(Boolean);
+  const unselectedMemories = memories.filter((memory) => !selected.has(memory.id));
+  const orderedMemories = [...selectedMemories, ...unselectedMemories];
   return `
     <section class="record-page record-page--select">
       <header class="record-stack-header">
@@ -244,23 +282,34 @@ function renderRecordSelect(memories, selectedIds, selectedTemplateId = DEFAULT_
       </header>
 
       <div class="record-select-list">
-        ${memories.map((memory, index) => {
+        ${orderedMemories.map((memory) => {
           const isSelected = selected.has(memory.id);
+          const selectedIndex = orderedSelectedIds.indexOf(memory.id);
           return `
-            <button class="record-select-card ${isSelected ? 'is-selected' : ''}" type="button" data-record-toggle-memory="${memory.id}">
+            <article class="record-select-card ${isSelected ? 'is-selected' : ''}">
+              <button class="record-select-card__toggle" type="button" data-record-toggle-memory="${memory.id}">
               <img src="${memory.imageData}" alt="" />
               <div class="record-select-card__copy">
                 <strong><time>${escapeHtml(memory.time)}</time><span>${getIcon('pin')} ${escapeHtml(memory.place || '場所未設定')}</span></strong>
                 <p>${escapeHtml(memory.memo || '今日の思い出')}</p>
-                ${index === 0 ? '<em>メイン写真</em>' : ''}
+                ${selectedIndex === 0 ? '<em>メイン写真</em>' : ''}
               </div>
               <span class="record-select-card__check">${isSelected ? getIcon('check') : ''}</span>
-            </button>
+              </button>
+              ${isSelected ? `
+                <div class="record-select-card__order" aria-label="photo order">
+                  <button type="button" data-record-move-memory="${memory.id}" data-record-move-direction="-1" ${selectedIndex <= 0 ? 'disabled' : ''}>↑</button>
+                  <span>${selectedIndex + 1}</span>
+                  <button type="button" data-record-move-memory="${memory.id}" data-record-move-direction="1" ${selectedIndex >= selectedMemories.length - 1 ? 'disabled' : ''}>↓</button>
+                </div>
+              ` : ''}
+            </article>
           `;
         }).join('')}
       </div>
 
       ${renderRecordTitleInput(recordTitle)}
+      ${renderRecordBackgroundPicker(selectedBackgroundId)}
       ${renderRecordTemplatePicker(selectedTemplateId)}
 
       <div class="record-create-bar">
@@ -271,9 +320,11 @@ function renderRecordSelect(memories, selectedIds, selectedTemplateId = DEFAULT_
   `;
 }
 
-function renderGeneratedPagePreview(memories, templateId = DEFAULT_RECORD_TEMPLATE, recordTitle = '') {
+function renderGeneratedPagePreview(memories, templateId = DEFAULT_RECORD_TEMPLATE, recordTitle = '', recordDate = '', backgroundId = DEFAULT_RECORD_BACKGROUND) {
   const template = getRecordTemplateById(templateId);
+  const background = getRecordBackgroundById(backgroundId);
   const title = String(recordTitle || '').trim() || 'A day to remember';
+  const pageDate = formatPageDate(recordDate);
   const textDensityClass = (memory) => {
     const placeLength = String(memory?.place || '').trim().length;
     const memoLength = String(memory?.memo || '').trim().length;
@@ -303,7 +354,9 @@ function renderGeneratedPagePreview(memories, templateId = DEFAULT_RECORD_TEMPLA
 
   return `
     <div class="record-generated-page record-generated-page--template" data-record-template="${template.id}">
+      ${background.src ? `<img class="record-generated-page__background" src="${background.src}" alt="" />` : ''}
       <img class="record-generated-page__template" src="${template.src}" alt="" />
+      <time class="record-generated-page__date" datetime="${escapeHtml(recordDate || getTodayDateKey())}">${escapeHtml(pageDate)}</time>
       ${template.titleSlot ? `
         <input
           class="record-template-slot record-template-slot--title"
@@ -320,7 +373,7 @@ function renderGeneratedPagePreview(memories, templateId = DEFAULT_RECORD_TEMPLA
   `;
 }
 
-function renderRecordComplete(memories, templateId = DEFAULT_RECORD_TEMPLATE, recordTitle = '') {
+function renderRecordComplete(memories, templateId = DEFAULT_RECORD_TEMPLATE, recordTitle = '', recordDate = '', backgroundId = DEFAULT_RECORD_BACKGROUND) {
   return `
     <section class="record-page record-page--complete">
       <header class="record-stack-header">
@@ -331,7 +384,7 @@ function renderRecordComplete(memories, templateId = DEFAULT_RECORD_TEMPLATE, re
         <span>${getIcon('heart')}</span>
         <h2>今日の思い出が<br />1ページになりました</h2>
       </div>
-      ${renderGeneratedPagePreview(memories, templateId, recordTitle)}
+      ${renderGeneratedPagePreview(memories, templateId, recordTitle, recordDate, backgroundId)}
       <div class="record-complete-actions">
         <button type="button" data-record-save-page>${getIcon('download')}<span>写真を保存</span></button>
         <button type="button" data-record-post-page>${getIcon('camera')}<span>投稿する</span></button>
@@ -356,7 +409,7 @@ export function renderRecord(state, uiState) {
 
   if (stage === 'camera') return renderRecordCamera(uiState.recordDraft || {});
   if (stage === 'edit') return renderRecordEdit(memories.find((memory) => memory.id === uiState.recordEditingId));
-  if (stage === 'select') return renderRecordSelect(memories, uiState.recordSelectedIds || [], uiState.recordTemplateId || DEFAULT_RECORD_TEMPLATE, uiState.recordTitle || '');
-  if (stage === 'complete') return renderRecordComplete(getSelectedMemories(memories, uiState.recordSelectedIds || []), uiState.recordTemplateId || DEFAULT_RECORD_TEMPLATE, uiState.recordTitle || '');
+  if (stage === 'select') return renderRecordSelect(memories, uiState.recordSelectedIds || [], uiState.recordTemplateId || DEFAULT_RECORD_TEMPLATE, uiState.recordTitle || '', uiState.recordBackgroundId || DEFAULT_RECORD_BACKGROUND);
+  if (stage === 'complete') return renderRecordComplete(getSelectedMemories(memories, uiState.recordSelectedIds || []), uiState.recordTemplateId || DEFAULT_RECORD_TEMPLATE, uiState.recordTitle || '', recordDate, uiState.recordBackgroundId || DEFAULT_RECORD_BACKGROUND);
   return renderRecordHome(memories, recordDate);
 }
