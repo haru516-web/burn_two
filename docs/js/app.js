@@ -515,7 +515,8 @@ function renderShell() {
   const shellClasses = ['app-shell'];
   const screenAreaClasses = ['screen-area'];
   const themeName = resolveHomeTheme();
-  const hasBottomNav = ['home', 'timeline', 'search', 'record', 'profile'].includes(uiState.screen);
+  const isRecordCameraStage = uiState.screen === 'record' && uiState.recordStage === 'camera';
+  const hasBottomNav = ['home', 'timeline', 'search', 'record', 'profile'].includes(uiState.screen) && !isRecordCameraStage;
 
   shellClasses.push(`app-shell--theme-${themeName}`);
   shellClasses.push('app-shell--theme-mode-light');
@@ -537,6 +538,10 @@ function renderShell() {
     screenAreaClasses.push('screen-area--search');
   } else if (uiState.screen === 'record') {
     screenAreaClasses.push('screen-area--record');
+    if (isRecordCameraStage) {
+      shellClasses.push('app-shell--record-camera');
+      screenAreaClasses.push('screen-area--record-camera');
+    }
   } else if (uiState.screen === 'profile') {
     screenAreaClasses.push('screen-area--profile');
   } else if (uiState.screen === 'post') {
@@ -567,6 +572,12 @@ function renderModals() {
 function renderScreen() {
   const screenArea = document.getElementById('screenArea');
   if (!screenArea) return;
+  const isRecordCameraStage = uiState.screen === 'record' && uiState.recordStage === 'camera';
+  const shell = screenArea.closest('.app-shell');
+  shell?.classList.toggle('app-shell--record-camera', isRecordCameraStage);
+  shell?.classList.toggle('app-shell--with-bottom-nav', !isRecordCameraStage && ['home', 'timeline', 'search', 'record', 'profile'].includes(uiState.screen));
+  screenArea.classList.toggle('screen-area--record-camera', isRecordCameraStage);
+  screenArea.classList.toggle('screen-area--with-bottom-nav', !isRecordCameraStage && ['home', 'timeline', 'search', 'record', 'profile'].includes(uiState.screen));
   if (!(uiState.screen === 'record' && uiState.recordStage === 'camera' && !uiState.recordDraft?.imageData)) {
     stopRecordCameraStream();
   }
@@ -7040,13 +7051,17 @@ function addRecordCameraSoftness(ctx, width, height, filterId) {
   ctx.restore();
 }
 
-function drawFilteredImageToCanvas(source, filterId = 'none') {
+function getRecordCaptureAspectRatio(frame = uiState.recordDraft?.frame) {
+  return frame === 'portrait' ? 0.772 : 1.183;
+}
+
+function drawFilteredImageToCanvas(source, filterId = 'none', frame = uiState.recordDraft?.frame) {
   const sourceWidth = source.videoWidth || source.naturalWidth || source.width;
   const sourceHeight = source.videoHeight || source.naturalHeight || source.height;
   if (!sourceWidth || !sourceHeight) return '';
   const isIxy = filterId === 'canon-ixy';
   const isD200 = filterId === 'nikon-d200';
-  const aspectRatio = isIxy ? 4 / 3 : isD200 ? 3 / 2 : sourceWidth / sourceHeight;
+  const aspectRatio = getRecordCaptureAspectRatio(frame);
   const canvas = document.createElement('canvas');
   canvas.width = Math.min(1600, sourceWidth);
   canvas.height = Math.round(canvas.width / aspectRatio);
@@ -7072,6 +7087,7 @@ async function applyRecordAlbumFile(file) {
     ...(uiState.recordDraft || {}),
     imageData: filteredImageData || imageData,
     filter: 'none',
+    frame: uiState.recordDraft?.frame === 'portrait' ? 'portrait' : 'landscape',
     time: uiState.recordDraft?.time || now.toTimeString().slice(0, 5),
     place: uiState.recordDraft?.place || '',
     memo: uiState.recordDraft?.memo || '',
@@ -7089,6 +7105,7 @@ function captureRecordCameraPhoto() {
     ...(uiState.recordDraft || {}),
     imageData,
     filter: 'none',
+    frame: uiState.recordDraft?.frame === 'portrait' ? 'portrait' : 'landscape',
     time: new Date().toTimeString().slice(0, 5),
     place: uiState.recordDraft?.place || '',
     memo: uiState.recordDraft?.memo || '',
@@ -7561,9 +7578,18 @@ function bindRecordEvents() {
         memo: '',
         filter: 'none',
         facingMode: 'environment',
+        frame: 'landscape',
       };
       renderScreen();
     });
+  });
+
+  document.querySelector('[data-record-switch-frame]')?.addEventListener('click', () => {
+    uiState.recordDraft = {
+      ...(uiState.recordDraft || {}),
+      frame: uiState.recordDraft?.frame === 'portrait' ? 'landscape' : 'portrait',
+    };
+    renderScreen();
   });
 
   document.querySelector('[data-record-switch-camera]')?.addEventListener('click', () => {
