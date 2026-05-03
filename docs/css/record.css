@@ -499,6 +499,34 @@
   height: 54px;
 }
 
+.record-camera-switch {
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: #fffaf6;
+  background: rgba(35, 27, 24, 0.42);
+  box-shadow: 0 10px 24px rgba(35, 27, 24, 0.18);
+  backdrop-filter: blur(12px);
+}
+
+.record-camera-switch svg {
+  width: 18px;
+  height: 18px;
+}
+
+.record-camera-switch span {
+  font-family: system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
 .record-camera-preview:has(.record-camera-video[srcObject]) .record-camera-placeholder,
 .record-camera-preview.is-live .record-camera-placeholder {
   display: none;

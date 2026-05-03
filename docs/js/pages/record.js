@@ -134,6 +134,7 @@ function renderRecordHome(memories, recordDate = '') {
 function renderRecordCamera(draft) {
   const hasPhoto = Boolean(draft?.imageData);
   const activeFilter = draft?.filter || 'none';
+  const activeFacingMode = draft?.facingMode === 'user' ? 'user' : 'environment';
   const filters = [
     { id: 'none', label: 'フィルターなし' },
     { id: 'canon-ixy', label: 'Canon IXY' },
@@ -151,6 +152,10 @@ function renderRecordCamera(draft) {
         ${hasPhoto
           ? `<img class="record-filter-${escapeHtml(activeFilter)}" src="${draft.imageData}" alt="" />`
           : `<video class="record-camera-video record-filter-${escapeHtml(activeFilter)}" data-record-camera-video autoplay playsinline muted></video>
+             <button class="record-camera-switch" type="button" data-record-switch-camera aria-label="カメラを切り替え">
+               ${getIcon('refreshCw')}
+               <span>${activeFacingMode === 'user' ? '内カメ' : '外カメ'}</span>
+             </button>
              <div class="record-camera-placeholder" data-record-camera-placeholder>${getIcon('camera')}<p>カメラを起動しています</p></div>`}
         <div class="record-time-pill">${getIcon('clock')} <strong>${escapeHtml(draft?.time || '--:--')}</strong> <span>自動記録</span></div>
       </div>
@@ -180,7 +185,7 @@ function renderRecordCamera(draft) {
         </div>
       </section>
 
-      <input type="file" accept="image/*" capture="environment" data-record-camera-input hidden />
+      <input type="file" accept="image/*" capture="${activeFacingMode === 'user' ? 'user' : 'environment'}" data-record-camera-input hidden />
       <input type="file" accept="image/*" data-record-album-input hidden />
     </section>
   `;

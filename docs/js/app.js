@@ -6904,10 +6904,11 @@ function stopRecordCameraStream() {
 async function startRecordCameraStream() {
   const video = document.querySelector('[data-record-camera-video]');
   if (!video || !navigator.mediaDevices?.getUserMedia) return;
+  const facingMode = uiState.recordDraft?.facingMode === 'user' ? 'user' : 'environment';
   stopRecordCameraStream();
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' } },
+      video: { facingMode: { ideal: facingMode } },
       audio: false,
     });
     recordCameraStream = stream;
@@ -7504,9 +7505,19 @@ function bindRecordEvents() {
         place: '',
         memo: '',
         filter: 'none',
+        facingMode: 'environment',
       };
       renderScreen();
     });
+  });
+
+  document.querySelector('[data-record-switch-camera]')?.addEventListener('click', () => {
+    uiState.recordDraft = {
+      ...(uiState.recordDraft || {}),
+      facingMode: uiState.recordDraft?.facingMode === 'user' ? 'environment' : 'user',
+    };
+    stopRecordCameraStream();
+    renderScreen();
   });
 
   document.querySelector('[data-record-open-camera-input]')?.addEventListener('click', () => {
