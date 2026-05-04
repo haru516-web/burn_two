@@ -267,6 +267,21 @@ function renderRecordBackgroundPicker(selectedBackgroundId = DEFAULT_RECORD_BACK
   `;
 }
 
+function renderRecordPhotoEdgePicker(photoFeather = true) {
+  return `
+    <section class="record-photo-edge-picker" aria-label="photo edge">
+      <div class="record-template-picker__head">
+        <h2>Photo edge</h2>
+        <p>写真の縁を背景になじませます。</p>
+      </div>
+      <div class="record-photo-edge-options">
+        <button class="${photoFeather ? 'is-selected' : ''}" type="button" data-record-photo-feather="true">ぼかす</button>
+        <button class="${photoFeather ? '' : 'is-selected'}" type="button" data-record-photo-feather="false">そのまま</button>
+      </div>
+    </section>
+  `;
+}
+
 function renderRecordTitleInput(title = '') {
   return `
     <label class="record-title-field">
@@ -276,7 +291,7 @@ function renderRecordTitleInput(title = '') {
   `;
 }
 
-function renderRecordSelect(memories, selectedIds, selectedTemplateId = DEFAULT_RECORD_TEMPLATE, recordTitle = '', selectedBackgroundId = DEFAULT_RECORD_BACKGROUND) {
+function renderRecordSelect(memories, selectedIds, selectedTemplateId = DEFAULT_RECORD_TEMPLATE, recordTitle = '', selectedBackgroundId = DEFAULT_RECORD_BACKGROUND, photoFeather = true) {
   const orderedSelectedIds = (selectedIds || []).slice(0, 3);
   const selected = new Set(orderedSelectedIds);
   const memoryById = new Map(memories.map((memory) => [memory.id, memory]));
@@ -324,6 +339,7 @@ function renderRecordSelect(memories, selectedIds, selectedTemplateId = DEFAULT_
       ${renderRecordTitleInput(recordTitle)}
       ${renderRecordBackgroundPicker(selectedBackgroundId)}
       ${renderRecordTemplatePicker(selectedTemplateId)}
+      ${renderRecordPhotoEdgePicker(photoFeather)}
 
       <div class="record-create-bar">
         <p>選択中 <strong>${selected.size}</strong> / 3 枚</p>
@@ -333,7 +349,7 @@ function renderRecordSelect(memories, selectedIds, selectedTemplateId = DEFAULT_
   `;
 }
 
-function renderGeneratedPagePreview(memories, templateId = DEFAULT_RECORD_TEMPLATE, recordTitle = '', recordDate = '', backgroundId = DEFAULT_RECORD_BACKGROUND) {
+function renderGeneratedPagePreview(memories, templateId = DEFAULT_RECORD_TEMPLATE, recordTitle = '', recordDate = '', backgroundId = DEFAULT_RECORD_BACKGROUND, photoFeather = true) {
   const template = getRecordTemplateById(templateId);
   const background = getRecordBackgroundById(backgroundId);
   const title = String(recordTitle || '').trim() || 'A day to remember';
@@ -366,7 +382,7 @@ function renderGeneratedPagePreview(memories, templateId = DEFAULT_RECORD_TEMPLA
   };
 
   return `
-    <div class="record-generated-page record-generated-page--template" data-record-template="${template.id}">
+    <div class="record-generated-page record-generated-page--template ${photoFeather ? 'record-generated-page--photo-soft' : 'record-generated-page--photo-plain'}" data-record-template="${template.id}">
       ${background.src ? `<img class="record-generated-page__background" src="${background.src}" alt="" />` : ''}
       <img class="record-generated-page__template" src="${template.src}" alt="" />
       <time class="record-generated-page__date" datetime="${escapeHtml(recordDate || getTodayDateKey())}">${escapeHtml(pageDate)}</time>
@@ -386,7 +402,7 @@ function renderGeneratedPagePreview(memories, templateId = DEFAULT_RECORD_TEMPLA
   `;
 }
 
-function renderRecordComplete(memories, templateId = DEFAULT_RECORD_TEMPLATE, recordTitle = '', recordDate = '', backgroundId = DEFAULT_RECORD_BACKGROUND) {
+function renderRecordComplete(memories, templateId = DEFAULT_RECORD_TEMPLATE, recordTitle = '', recordDate = '', backgroundId = DEFAULT_RECORD_BACKGROUND, photoFeather = true) {
   return `
     <section class="record-page record-page--complete">
       <header class="record-stack-header">
@@ -397,7 +413,7 @@ function renderRecordComplete(memories, templateId = DEFAULT_RECORD_TEMPLATE, re
         <span>${getIcon('heart')}</span>
         <h2>今日の思い出が<br />1ページになりました</h2>
       </div>
-      ${renderGeneratedPagePreview(memories, templateId, recordTitle, recordDate, backgroundId)}
+      ${renderGeneratedPagePreview(memories, templateId, recordTitle, recordDate, backgroundId, photoFeather)}
       <div class="record-complete-actions">
         <button type="button" data-record-save-page>${getIcon('download')}<span>写真を保存</span></button>
         <button type="button" data-record-post-page>${getIcon('camera')}<span>投稿する</span></button>
@@ -422,7 +438,8 @@ export function renderRecord(state, uiState) {
 
   if (stage === 'camera') return renderRecordCamera(uiState.recordDraft || {});
   if (stage === 'edit') return renderRecordEdit(memories.find((memory) => memory.id === uiState.recordEditingId));
-  if (stage === 'select') return renderRecordSelect(memories, uiState.recordSelectedIds || [], uiState.recordTemplateId || DEFAULT_RECORD_TEMPLATE, uiState.recordTitle || '', uiState.recordBackgroundId || DEFAULT_RECORD_BACKGROUND);
-  if (stage === 'complete') return renderRecordComplete(getSelectedMemories(memories, uiState.recordSelectedIds || []), uiState.recordTemplateId || DEFAULT_RECORD_TEMPLATE, uiState.recordTitle || '', recordDate, uiState.recordBackgroundId || DEFAULT_RECORD_BACKGROUND);
+  const photoFeather = uiState.recordPhotoFeather !== false;
+  if (stage === 'select') return renderRecordSelect(memories, uiState.recordSelectedIds || [], uiState.recordTemplateId || DEFAULT_RECORD_TEMPLATE, uiState.recordTitle || '', uiState.recordBackgroundId || DEFAULT_RECORD_BACKGROUND, photoFeather);
+  if (stage === 'complete') return renderRecordComplete(getSelectedMemories(memories, uiState.recordSelectedIds || []), uiState.recordTemplateId || DEFAULT_RECORD_TEMPLATE, uiState.recordTitle || '', recordDate, uiState.recordBackgroundId || DEFAULT_RECORD_BACKGROUND, photoFeather);
   return renderRecordHome(memories, recordDate);
 }

@@ -1011,6 +1011,33 @@
   text-align: left;
 }
 
+.record-photo-edge-picker {
+  margin: 8px 0 22px;
+  text-align: left;
+}
+
+.record-photo-edge-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.record-photo-edge-options button {
+  min-height: 44px;
+  border: 1px solid rgba(78, 57, 51, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.76);
+  color: #6f4d48;
+  font-size: 0.9rem;
+}
+
+.record-photo-edge-options button.is-selected {
+  border-color: rgba(182, 106, 98, 0.42);
+  background: #f8e7e3;
+  color: #8e5a54;
+  box-shadow: 0 8px 18px rgba(181, 98, 92, 0.12);
+}
+
 .record-title-field {
   display: grid;
   gap: 8px;
@@ -1389,7 +1416,7 @@
 
 .record-template-slot--image {
   margin: 0;
-  background: #ffe4e4;
+  background: transparent;
   overflow: visible;
 }
 
@@ -1399,6 +1426,17 @@
   height: 100%;
   object-fit: cover;
   clip-path: inset(0);
+}
+
+.record-generated-page--photo-soft .record-template-slot--image img {
+  -webkit-mask-image:
+    linear-gradient(to right, transparent 0, #000 7%, #000 93%, transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 7%, #000 93%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to right, transparent 0, #000 7%, #000 93%, transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 7%, #000 93%, transparent 100%);
+  mask-composite: intersect;
 }
 
 .record-template-slot--image figcaption {

@@ -84,6 +84,7 @@ const uiState = {
   recordDate: null,
   recordTemplateId: DEFAULT_RECORD_TEMPLATE,
   recordBackgroundId: DEFAULT_RECORD_BACKGROUND,
+  recordPhotoFeather: true,
   recordTitle: '',
   recordDraft: null,
   recordSelectedIds: [],
@@ -656,6 +657,7 @@ function navigate(screen) {
     uiState.recordDate = null;
     uiState.recordTemplateId = DEFAULT_RECORD_TEMPLATE;
     uiState.recordBackgroundId = DEFAULT_RECORD_BACKGROUND;
+    uiState.recordPhotoFeather = true;
     uiState.recordTitle = '';
     uiState.recordDraft = null;
     uiState.recordSelectedIds = [];
@@ -681,6 +683,7 @@ function navigate(screen) {
     uiState.recordDate = null;
     uiState.recordTemplateId = DEFAULT_RECORD_TEMPLATE;
     uiState.recordBackgroundId = DEFAULT_RECORD_BACKGROUND;
+    uiState.recordPhotoFeather = true;
     uiState.recordTitle = '';
     uiState.recordDraft = null;
     uiState.recordSelectedIds = [];
@@ -1814,6 +1817,7 @@ function bindTimelineEvents() {
       uiState.recordEditingId = null;
       uiState.recordSelectedIds = [];
       uiState.recordBackgroundId = DEFAULT_RECORD_BACKGROUND;
+      uiState.recordPhotoFeather = true;
       uiState.screen = 'record';
       render();
     });
@@ -7164,7 +7168,7 @@ function getRecordPageCrop(memory) {
   };
 }
 
-function drawCroppedCoverImage(ctx, image, rect, crop = { x: 0.5, y: 0.5, zoom: 1 }) {
+function drawCroppedCoverImage(ctx, image, rect, crop = { x: 0.5, y: 0.5, zoom: 1 }, options = {}) {
   if (!image) return;
   const sourceWidth = image.naturalWidth || image.width;
   const sourceHeight = image.naturalHeight || image.height;
@@ -7178,12 +7182,49 @@ function drawCroppedCoverImage(ctx, image, rect, crop = { x: 0.5, y: 0.5, zoom: 
   const focusY = Math.min(1, Math.max(0, Number(crop?.y) || 0.5));
   const drawX = rect.x - overflowX * focusX;
   const drawY = rect.y - overflowY * focusY;
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(rect.x, rect.y, rect.width, rect.height);
-  ctx.clip();
-  ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
-  ctx.restore();
+  if (!options.featherEdges) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(rect.x, rect.y, rect.width, rect.height);
+    ctx.clip();
+    ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+    ctx.restore();
+    return;
+  }
+
+  const edge = Math.max(8, Math.min(rect.width, rect.height) * 0.07);
+  const layer = document.createElement('canvas');
+  layer.width = Math.max(1, Math.round(rect.width));
+  layer.height = Math.max(1, Math.round(rect.height));
+  const layerCtx = layer.getContext('2d');
+  if (!layerCtx) return;
+
+  layerCtx.drawImage(
+    image,
+    drawX - rect.x,
+    drawY - rect.y,
+    drawWidth,
+    drawHeight,
+  );
+  layerCtx.globalCompositeOperation = 'destination-in';
+
+  const horizontalMask = layerCtx.createLinearGradient(0, 0, layer.width, 0);
+  horizontalMask.addColorStop(0, 'rgba(0,0,0,0)');
+  horizontalMask.addColorStop(Math.min(0.5, edge / layer.width), 'rgba(0,0,0,1)');
+  horizontalMask.addColorStop(Math.max(0.5, 1 - (edge / layer.width)), 'rgba(0,0,0,1)');
+  horizontalMask.addColorStop(1, 'rgba(0,0,0,0)');
+  layerCtx.fillStyle = horizontalMask;
+  layerCtx.fillRect(0, 0, layer.width, layer.height);
+
+  const verticalMask = layerCtx.createLinearGradient(0, 0, 0, layer.height);
+  verticalMask.addColorStop(0, 'rgba(0,0,0,0)');
+  verticalMask.addColorStop(Math.min(0.5, edge / layer.height), 'rgba(0,0,0,1)');
+  verticalMask.addColorStop(Math.max(0.5, 1 - (edge / layer.height)), 'rgba(0,0,0,1)');
+  verticalMask.addColorStop(1, 'rgba(0,0,0,0)');
+  layerCtx.fillStyle = verticalMask;
+  layerCtx.fillRect(0, 0, layer.width, layer.height);
+
+  ctx.drawImage(layer, rect.x, rect.y, rect.width, rect.height);
 }
 
 function drawCenteredText(ctx, text, x, y, maxWidth) {
@@ -7385,7 +7426,9 @@ async function renderRecordPageToCanvasDataUrl() {
       return;
     }
     drawRecordTime(ctx, memories[index]?.time, rect);
-    drawCroppedCoverImage(ctx, images[index], rect, getRecordPageCrop(memories[index]));
+    drawCroppedCoverImage(ctx, images[index], rect, getRecordPageCrop(memories[index]), {
+      featherEdges: uiState.recordPhotoFeather !== false,
+    });
   });
 
   template.textSlots.forEach((slot, index) => {
@@ -7508,6 +7551,7 @@ async function saveRecordGeneratedPage({ publish = false } = {}) {
         recordMemoryIds: selectedIds.slice(0, 3),
         recordTemplateId: uiState.recordTemplateId || DEFAULT_RECORD_TEMPLATE,
         recordBackgroundId: uiState.recordBackgroundId || DEFAULT_RECORD_BACKGROUND,
+        recordPhotoFeather: uiState.recordPhotoFeather !== false,
         title,
       },
     });
@@ -7522,6 +7566,7 @@ async function saveRecordGeneratedPage({ publish = false } = {}) {
         recordMemoryIds: selectedIds.slice(0, 3),
         recordTemplateId: uiState.recordTemplateId || DEFAULT_RECORD_TEMPLATE,
         recordBackgroundId: uiState.recordBackgroundId || DEFAULT_RECORD_BACKGROUND,
+        recordPhotoFeather: uiState.recordPhotoFeather !== false,
         title,
       },
     });
@@ -7536,6 +7581,7 @@ async function saveRecordGeneratedPage({ publish = false } = {}) {
   uiState.recordEditingId = null;
   uiState.recordSelectedIds = [];
   uiState.recordBackgroundId = DEFAULT_RECORD_BACKGROUND;
+  uiState.recordPhotoFeather = true;
   uiState.recordTitle = '';
   render();
   return true;
@@ -7720,6 +7766,13 @@ function bindRecordEvents() {
         const nextGrid = document.querySelector('[data-record-background-grid]');
         if (nextGrid) nextGrid.scrollLeft = uiState.recordBackgroundScrollLeft || 0;
       });
+    });
+  });
+
+  document.querySelectorAll('[data-record-photo-feather]').forEach((button) => {
+    button.addEventListener('click', () => {
+      uiState.recordPhotoFeather = button.dataset.recordPhotoFeather !== 'false';
+      renderScreen();
     });
   });
 
