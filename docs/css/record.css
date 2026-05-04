@@ -158,6 +158,11 @@
   height: 22px;
 }
 
+.record-create-page-button {
+  display: flex;
+  margin: 18px auto 0;
+}
+
 .record-section {
   margin-top: 32px;
 }

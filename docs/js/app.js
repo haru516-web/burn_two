@@ -7798,8 +7798,16 @@ function bindRecordEvents() {
     uiState.recordTitle = event.target.value || '';
   });
 
-  document.querySelector('[data-record-create-page]')?.addEventListener('click', () => {
+  const recordCreatePageButton = document.querySelector('[data-record-create-page]');
+  if (recordCreatePageButton) recordCreatePageButton.textContent = 'プレビュー表示';
+  recordCreatePageButton?.addEventListener('click', () => {
     if ((uiState.recordSelectedIds || []).length !== 3) return;
+    uiState.recordTitle = document.querySelector('[data-record-title]')?.value || uiState.recordTitle || '';
+    uiState.recordStage = 'preview';
+    renderScreen();
+  });
+
+  document.querySelector('[data-record-confirm-page]')?.addEventListener('click', () => {
     uiState.recordTitle = document.querySelector('[data-record-title]')?.value || uiState.recordTitle || '';
     uiState.recordStage = 'complete';
     renderScreen();
