@@ -517,7 +517,7 @@ function renderShell() {
   const screenAreaClasses = ['screen-area'];
   const themeName = resolveHomeTheme();
   const isRecordCameraStage = uiState.screen === 'record' && uiState.recordStage === 'camera';
-  const hasBottomNav = ['home', 'timeline', 'search', 'record', 'profile'].includes(uiState.screen) && !isRecordCameraStage;
+  const hasBottomNav = ['home', 'timeline', 'search', 'record', 'magazine', 'profile'].includes(uiState.screen) && !isRecordCameraStage;
 
   shellClasses.push(`app-shell--theme-${themeName}`);
   shellClasses.push('app-shell--theme-mode-light');
@@ -576,9 +576,9 @@ function renderScreen() {
   const isRecordCameraStage = uiState.screen === 'record' && uiState.recordStage === 'camera';
   const shell = screenArea.closest('.app-shell');
   shell?.classList.toggle('app-shell--record-camera', isRecordCameraStage);
-  shell?.classList.toggle('app-shell--with-bottom-nav', !isRecordCameraStage && ['home', 'timeline', 'search', 'record', 'profile'].includes(uiState.screen));
+  shell?.classList.toggle('app-shell--with-bottom-nav', !isRecordCameraStage && ['home', 'timeline', 'search', 'record', 'magazine', 'profile'].includes(uiState.screen));
   screenArea.classList.toggle('screen-area--record-camera', isRecordCameraStage);
-  screenArea.classList.toggle('screen-area--with-bottom-nav', !isRecordCameraStage && ['home', 'timeline', 'search', 'record', 'profile'].includes(uiState.screen));
+  screenArea.classList.toggle('screen-area--with-bottom-nav', !isRecordCameraStage && ['home', 'timeline', 'search', 'record', 'magazine', 'profile'].includes(uiState.screen));
   if (!(uiState.screen === 'record' && uiState.recordStage === 'camera' && !uiState.recordDraft?.imageData)) {
     stopRecordCameraStream();
   }
@@ -6867,6 +6867,61 @@ function bindComposeEvents() {
 }
 
 function bindMagazineEvents() {
+  const mvpStorageKey = 'couple-magazine-mvp-v1';
+  const readMvp = () => {
+    try {
+      return JSON.parse(window.localStorage.getItem(mvpStorageKey) || '{}') || {};
+    } catch (error) {
+      return {};
+    }
+  };
+  const writeMvp = (next) => {
+    window.localStorage.setItem(mvpStorageKey, JSON.stringify(next));
+  };
+
+  document.querySelectorAll('[data-couple-memory]').forEach((input) => {
+    input.addEventListener('change', () => {
+      const selectedMemoryIds = Array.from(document.querySelectorAll('[data-couple-memory]:checked'))
+        .map((node) => String(node.value));
+      writeMvp({ ...readMvp(), selectedMemoryIds, statusText: '' });
+      renderScreen();
+    });
+  });
+
+  const messageInput = document.querySelector('[data-couple-message]');
+  messageInput?.addEventListener('blur', () => {
+    writeMvp({ ...readMvp(), partnerMessage: messageInput.value.trim() });
+  });
+
+  const generateButton = document.querySelector('[data-couple-generate]');
+  generateButton?.addEventListener('click', () => {
+    const state = getState();
+    const mvp = readMvp();
+    const selectedMemoryIds = Array.isArray(mvp.selectedMemoryIds) ? mvp.selectedMemoryIds : [];
+    const selected = (state.recordMemories || []).filter((memory) => selectedMemoryIds.includes(memory.id));
+    if (!selected.length) return;
+    writeMvp({
+      ...mvp,
+      generatedAt: new Date().toISOString(),
+      coverTitle: 'Two of Us',
+      coverSubtitle: `${selected.length}枚の写真から作成`,
+      statusText: 'プレビューを作成しました。',
+    });
+    renderScreen();
+  });
+
+  const openButton = document.querySelector('[data-couple-open]');
+  openButton?.addEventListener('click', () => {
+    writeMvp({ ...readMvp(), statusText: 'ふたりで開封するモックを開始しました（同期機能は未実装）。' });
+    renderScreen();
+  });
+
+  const paperButton = document.querySelector('[data-couple-paper]');
+  paperButton?.addEventListener('click', () => {
+    writeMvp({ ...readMvp(), statusText: '紙で残すモックへ進みました（決済・配送は未実装）。' });
+    renderScreen();
+  });
+
   const form = document.getElementById('issueForm');
   if (!form) return;
   form.addEventListener('submit', (event) => {

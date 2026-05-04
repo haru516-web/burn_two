@@ -1430,7 +1430,7 @@
     max(6px, calc(env(safe-area-inset-bottom) + 2px))
     max(8px, calc(env(safe-area-inset-left) + 6px));
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: end;
   gap: 4px;
   background: rgba(252, 251, 248, 0.96);
@@ -2560,7 +2560,7 @@
 }
 
 .timeline-bottom-nav {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .timeline-bottom-nav__item--compose .timeline-bottom-nav__icon {
