@@ -1,6 +1,17 @@
 import { getIcon } from '../components/icons.js';
 import { formatDate } from '../utils/date.js';
 
+const COUPLE_MAGAZINE_STORAGE_KEY = 'couple-magazine-mvp-v1';
+
+function readCoupleMagazineMvpState() {
+  if (typeof window === 'undefined') return {};
+  try {
+    return JSON.parse(window.localStorage.getItem(COUPLE_MAGAZINE_STORAGE_KEY) || '{}') || {};
+  } catch (error) {
+    return {};
+  }
+}
+
 function renderSelectablePosts(posts) {
   if (!posts.length) {
     return `
@@ -45,6 +56,11 @@ function renderIssues(issues, posts) {
 }
 
 export function renderMagazine(state) {
+  const mvpState = readCoupleMagazineMvpState();
+  const memories = Array.isArray(state.recordMemories) ? state.recordMemories : [];
+  const selectedMemoryIds = Array.isArray(mvpState.selectedMemoryIds) ? mvpState.selectedMemoryIds : [];
+  const selectedMemories = memories.filter((memory) => selectedMemoryIds.includes(memory.id));
+  const hasGeneratedCover = Boolean(mvpState.generatedAt) && selectedMemories.length > 0;
   return `
     <section class="page page--magazine">
       <header class="page-header page-header--with-back">
@@ -56,6 +72,53 @@ export function renderMagazine(state) {
           <h2 class="page-header__title">Magazine</h2>
         </div>
       </header>
+
+      <section class="couple-magazine">
+        <div class="section-head">
+          <h3>ふたりの雑誌を作る</h3>
+        </div>
+        <p class="couple-magazine__lead">アプリ内で無料で見返せる、ふたりだけの小さな一冊を作ります。</p>
+
+        <section class="couple-step">
+          <h4>1. デート写真を選ぶ</h4>
+          <div class="couple-photo-grid">
+            ${memories.length ? memories.map((memory) => `
+              <label class="couple-photo-option">
+                <input type="checkbox" data-couple-memory value="${memory.id}" ${selectedMemoryIds.includes(memory.id) ? 'checked' : ''} />
+                <img src="${memory.imageData}" alt="デート写真 ${formatDate(memory.createdAt)}" />
+                <span>${memory.place || formatDate(memory.createdAt)}</span>
+              </label>
+            `).join('') : '<p class="empty-copy">先にrecordで写真を保存すると、ここで選べます。</p>'}
+          </div>
+        </section>
+
+        <section class="couple-step">
+          <h4>2. 表紙を自動作成</h4>
+          <button class="button button--primary" type="button" data-couple-generate ${selectedMemories.length ? '' : 'disabled'}>表紙を作る</button>
+          ${hasGeneratedCover ? '<p class="couple-badge">表紙ができました</p>' : ''}
+          ${hasGeneratedCover ? `
+            <article class="couple-cover-preview">
+              <img src="${selectedMemories[0].imageData}" alt="雑誌表紙プレビュー" />
+              <div>
+                <p class="couple-cover-preview__eyebrow">couple issue</p>
+                <h4>${mvpState.coverTitle || 'Our Date Issue'}</h4>
+                <p>${mvpState.coverSubtitle || 'ふたりの時間を、静かに一冊へ。'}</p>
+              </div>
+            </article>
+          ` : ''}
+        </section>
+
+        <section class="couple-step">
+          <h4>3. 相手に一言を残す</h4>
+          <textarea class="field__input couple-message" data-couple-message rows="3" maxlength="120" placeholder="いつもありがとう。次のデートも楽しみ。">${mvpState.partnerMessage || ''}</textarea>
+        </section>
+
+        <section class="couple-step couple-actions">
+          <button class="button button--ghost" type="button" data-couple-open ${hasGeneratedCover ? '' : 'disabled'}>ふたりで開封する</button>
+          <button class="button button--ghost" type="button" data-couple-paper ${hasGeneratedCover ? '' : 'disabled'}>紙で残す</button>
+          <p class="couple-magazine__status" data-couple-status>${mvpState.statusText || ''}</p>
+        </section>
+      </section>
 
       <form class="issue-form" id="issueForm">
         <label class="field">
