@@ -7374,6 +7374,7 @@ function loadCanvasImage(src) {
       return;
     }
     const image = new Image();
+    image.crossOrigin = 'anonymous';
     image.onload = () => resolve(image);
     image.onerror = () => resolve(null);
     image.src = src;
