@@ -1245,8 +1245,8 @@ async function bindOpeningEvents() {
   openingScreen.addEventListener('pointerdown', skipOpening, { once: true });
 
   const assetTask = Promise.all([
-    loadOpeningImage('image/background/okinawa.png'),
-    loadOpeningImage('image/logo/BURN＿white.png'),
+    loadOpeningImage('image/background/okinawa.webp'),
+    loadOpeningImage('image/logo/BURN＿white.webp'),
   ]).catch(() => [null, null]);
 
   try {
@@ -3158,7 +3158,7 @@ function bindComposeEvents() {
     const downloadLink = document.createElement('a');
     downloadLink.className = 'button button--primary compose-download-image-button compose-download-image-button--header';
     downloadLink.href = blobUrl;
-    downloadLink.download = `burn-page-${stamp}.png`;
+    downloadLink.download = `burn-page-${stamp}.webp`;
     downloadLink.textContent = 'Download';
     downloadLink.dataset.downloadComposeImage = 'true';
     saveButton.insertAdjacentElement('afterend', downloadLink);
@@ -7675,7 +7675,7 @@ async function captureRecordPageImage() {
 
 function getRecordPageImageFilename() {
   const dateKey = uiState.recordDate || new Date().toISOString().slice(0, 10);
-  return `memory-page-${dateKey.replaceAll('-', '')}.png`;
+  return `memory-page-${dateKey.replaceAll('-', '')}.webp`;
 }
 
 function getRecordPhotoFilename() {

@@ -6,7 +6,7 @@
   padding: 24px;
   background:
     linear-gradient(180deg, rgba(9, 12, 17, 0.12), rgba(9, 12, 17, 0.48)),
-    url('../image/background/okinawa.png') center / cover no-repeat,
+    url('../image/background/okinawa.webp') center / cover no-repeat,
     #090c11;
   overflow: hidden;
   isolation: isolate;

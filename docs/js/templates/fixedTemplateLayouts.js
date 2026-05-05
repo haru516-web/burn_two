@@ -150,7 +150,7 @@ function applyLayoutOverrides(layout, overrides) {
 
 const RAW_FIXED_TEMPLATE_LAYOUTS = {
   page1: {
-    roughUrl: roughAsset('3.png'),
+    roughUrl: roughAsset('3.webp'),
     images: [
       rawRect(0.0523, 0.0555, 0.4717, 0.2360),
       rawRect(0.5021, 0.0555, 0.9477, 0.5150),
@@ -164,7 +164,7 @@ const RAW_FIXED_TEMPLATE_LAYOUTS = {
     ],
   },
   page2: {
-    roughUrl: roughAsset('4.png'),
+    roughUrl: roughAsset('4.webp'),
     images: [
       rawRect(0.0636, 0.0460, 0.4837, 0.3860),
       rawRect(0.1351, 0.4065, 0.4837, 0.6410),
@@ -176,7 +176,7 @@ const RAW_FIXED_TEMPLATE_LAYOUTS = {
     ],
   },
   page3: {
-    roughUrl: roughAsset('5.png'),
+    roughUrl: roughAsset('5.webp'),
     images: [
       rawRect(0.0870, 0.1705, 0.4823, 0.4215),
       rawRect(0.0870, 0.4420, 0.9123, 0.9370),
@@ -187,7 +187,7 @@ const RAW_FIXED_TEMPLATE_LAYOUTS = {
     ],
   },
   page4: {
-    roughUrl: roughAsset('6.png'),
+    roughUrl: roughAsset('6.webp'),
     images: [
       rawRect(0.1004, 0.1065, 0.4823, 0.4905),
       rawRect(0.1004, 0.5120, 0.4823, 0.8955),
@@ -204,7 +204,7 @@ const RAW_FIXED_TEMPLATE_LAYOUTS = {
     ],
   },
   page5: {
-    roughUrl: roughAsset('7.png'),
+    roughUrl: roughAsset('7.webp'),
     images: [
       rawRect(0.0792, 0.1745, 0.4823, 0.9290),
     ],
@@ -221,7 +221,7 @@ const RAW_FIXED_TEMPLATE_LAYOUTS = {
     ],
   },
   page6: {
-    roughUrl: roughAsset('8.png'),
+    roughUrl: roughAsset('8.webp'),
     images: [
       rawRect(0.0997, 0.4820, 0.4866, 0.7560),
       rawRect(0.5134, 0.4820, 0.9003, 0.7560),
@@ -234,7 +234,7 @@ const RAW_FIXED_TEMPLATE_LAYOUTS = {
     ],
   },
   page7: {
-    roughUrl: roughAsset('9.png'),
+    roughUrl: roughAsset('9.webp'),
     images: [
       rawRect(0.5354, 0.1065, 0.8777, 0.4700),
       rawRect(0.1004, 0.5295, 0.4427, 0.8930),
@@ -254,7 +254,7 @@ const RAW_FIXED_TEMPLATE_LAYOUTS = {
     ],
   },
   page9: {
-    roughUrl: roughAsset('10.png'),
+    roughUrl: roughAsset('10.webp'),
     images: [
       {
         ...rawRect(0.0552, 0.2795, 0.4632, 0.9015),
@@ -267,7 +267,7 @@ const RAW_FIXED_TEMPLATE_LAYOUTS = {
     ],
   },
   page10: {
-    roughUrl: roughAsset('11.png'),
+    roughUrl: roughAsset('11.webp'),
     images: [
       rawRect(0.0651, 0.0395, 0.3324, 0.9605),
       rawRect(0.3798, 0.2940, 0.9349, 0.5380),
@@ -280,7 +280,7 @@ const RAW_FIXED_TEMPLATE_LAYOUTS = {
     ],
   },
   page11: {
-    roughUrl: roughAsset('2.png'),
+    roughUrl: roughAsset('2.webp'),
     images: [
       rawRect(0.2313, 0.1260, 0.7687, 0.6600),
     ],

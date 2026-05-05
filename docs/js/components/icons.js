@@ -1,17 +1,17 @@
 export function getIcon(name) {
   const imageIcons = {
-    timeline: 'image/icon/feature/timeline.png',
-    search: 'image/icon/feature/search.png',
-    searchLine: 'image/icon/feature/search.png',
-    settings: 'image/icon/feature/settings.png',
-    profile: 'image/icon/feature/profile.png',
-    compose: 'image/icon/feature/add.png',
-    post: 'image/icon/feature/post.png',
-    heart: 'image/icon/feature/like.png',
-    comment: 'image/icon/feature/comment.png',
-    save: 'image/icon/feature/save.png',
-    trash: 'image/icon/feature/delete.png',
-    edit: 'image/icon/feature/edit.png'
+    timeline: 'image/icon/feature/timeline.webp',
+    search: 'image/icon/feature/search.webp',
+    searchLine: 'image/icon/feature/search.webp',
+    settings: 'image/icon/feature/settings.webp',
+    profile: 'image/icon/feature/profile.webp',
+    compose: 'image/icon/feature/add.webp',
+    post: 'image/icon/feature/post.webp',
+    heart: 'image/icon/feature/like.webp',
+    comment: 'image/icon/feature/comment.webp',
+    save: 'image/icon/feature/save.webp',
+    trash: 'image/icon/feature/delete.webp',
+    edit: 'image/icon/feature/edit.webp'
   };
 
   if (imageIcons[name]) {

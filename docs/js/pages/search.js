@@ -42,7 +42,7 @@ export const DATE_PLANS = [
     time: '11:00〜13:30',
     date: '2025-05-03',
     tags: ['静か', '〜3,000円', 'カフェ'],
-    image: 'assets/5-CEZXb3Sg.png',
+    image: 'assets/5-CEZXb3Sg.webp',
     weights: { cafe: 5, relax: 3, quiet: 3, 3000: 2, 5000: 2 },
   },
   {
@@ -53,7 +53,7 @@ export const DATE_PLANS = [
     time: '19:00〜21:00',
     date: '2025-05-10',
     tags: ['夜', '写真映え'],
-    image: 'assets/10-CNvd6Y-G.png',
+    image: 'assets/10-CNvd6Y-G.webp',
     weights: { dinner: 4, photo: 3, memory: 3, special: 3, quiet: 1 },
   },
   {
@@ -64,7 +64,7 @@ export const DATE_PLANS = [
     time: '14:00〜16:30',
     date: '2025-05-24',
     tags: ['外', 'ゆっくり'],
-    image: 'assets/8-Byay75Vc.png',
+    image: 'assets/8-Byay75Vc.webp',
     weights: { walk: 5, active: 3, relax: 2, 3000: 1 },
   },
   {
@@ -75,7 +75,7 @@ export const DATE_PLANS = [
     time: '15:00〜17:00',
     date: '2025-05-31',
     tags: ['おうち', '記録'],
-    image: 'assets/11-Dxtb6Ugd.png',
+    image: 'assets/11-Dxtb6Ugd.webp',
     weights: { home: 5, memory: 4, photo: 2, relax: 2, 3000: 2 },
   },
 ];
