@@ -7320,8 +7320,7 @@ function drawFilteredImageToCanvas(source, filterId = 'none', frame = uiState.re
   canvas.height = Math.round(canvas.width / aspectRatio);
   const ctx = canvas.getContext('2d');
   if (!ctx) return '';
-  const filterZoom = isIxy ? 1.16 : isD200 ? 1.32 : 1;
-  const zoom = filterZoom * Math.min(5, Math.max(1, Number(cameraZoom) || 1));
+  const zoom = Math.min(5, Math.max(1, Number(cameraZoom) || 1));
   if (!drawRecordCameraSource(ctx, source, canvas.width, canvas.height, zoom)) return '';
   applyRecordCameraPixelFilter(ctx, canvas.width, canvas.height, filterId);
   addRecordCameraSoftness(ctx, canvas.width, canvas.height, filterId);
