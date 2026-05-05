@@ -40,14 +40,6 @@ export function renderProfile(state, uiState = {}) {
         </section>
 
         <section class="futari-section">
-          <button class="futari-date-list-link" type="button" data-open-date-list>
-            <span>デート一覧</span>
-            ${getIcon('chevronRight')}
-          </button>
-          <button class="futari-date-list-link" type="button" data-open-draft-list>
-            <span>draft</span>
-            ${getIcon('chevronRight')}
-          </button>
           <button class="futari-date-list-link" type="button" data-open-todo-list>
             <span>やりたいことリスト</span>
             ${getIcon('chevronRight')}

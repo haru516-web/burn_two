@@ -2,6 +2,7 @@
   min-height: 100vh;
   min-height: 100svh;
   min-height: 100dvh;
+  max-height: 100dvh;
   display: grid;
   place-items: center;
   padding: 24px;
@@ -9,8 +10,16 @@
     linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(42, 30, 24, 0.36)),
     url('../image/background/okinawa.webp') center / cover no-repeat,
     #f8efe4;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   isolation: isolate;
+}
+
+.auth-screen:focus-within {
+  place-items: start center;
+  padding-top: max(16px, env(safe-area-inset-top));
+  padding-bottom: max(40vh, env(safe-area-inset-bottom));
 }
 
 .auth-screen::before {
@@ -114,6 +123,7 @@
   background: rgba(255, 255, 255, 0.88);
   color: #2f2520;
   padding: 0 14px;
+  scroll-margin-block: 120px;
 }
 
 .auth-field input:focus {
@@ -194,5 +204,22 @@
 
   .auth-card__title {
     font-size: 34px;
+  }
+}
+
+@media (max-height: 640px) {
+  .auth-screen {
+    place-items: start center;
+    padding-top: 16px;
+    padding-bottom: max(32px, env(safe-area-inset-bottom));
+  }
+
+  .auth-card {
+    gap: 14px;
+    padding: 22px 18px 18px;
+  }
+
+  .auth-card__title {
+    font-size: 32px;
   }
 }
