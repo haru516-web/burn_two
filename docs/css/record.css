@@ -74,6 +74,32 @@
   background: rgba(180, 106, 98, 0.35);
 }
 
+.record-date-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: min(100%, 320px);
+  margin: 18px auto 0;
+  padding: 4px;
+  border: 1px solid rgba(78, 57, 51, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.record-date-switch button {
+  min-height: 38px;
+  border-radius: 999px;
+  color: #5d4b44;
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+
+.record-date-switch button.is-selected {
+  background: #2c2320;
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(77, 48, 39, 0.16);
+}
+
 .record-start-card,
 .record-memory-card,
 .record-select-card,

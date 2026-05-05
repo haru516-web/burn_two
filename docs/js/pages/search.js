@@ -473,7 +473,6 @@ function renderDateList(state, uiState = {}) {
 
   return `
     ${renderBrand()}
-    <button class="couple-list-back" type="button" data-list-back>${getIcon('returnLeft')} 戻る</button>
     <header class="couple-page-title">
       <h1>デート予定一覧</h1>
       <p>カレンダーに追加した予定をまとめて確認できます。</p>
@@ -505,11 +504,11 @@ function renderPageListEntry(post) {
   const title = getPostTitle(post);
   const dateText = new Date(post.createdAt).toLocaleDateString('ja-JP').replace(/\//g, '.');
   return `
-    <article class="couple-page-list-card couple-card">
-      <button class="couple-page-list-card__media" type="button" data-open-preview="${post.id}" aria-label="${title}を開く">
+    <article class="couple-album-page">
+      <button class="couple-album-page__image" type="button" data-open-preview="${post.id}" aria-label="${title}を開く">
         ${post.imageData ? `<img src="${post.imageData}" alt="${title}" />` : '<span>pages</span>'}
       </button>
-      <div>
+      <div class="couple-album-page__meta">
         <p class="couple-kicker">${dateText}</p>
         <h2>${title}</h2>
         <p>${String(post.caption || '作成済みページ').split('/').slice(1).join(' / ') || 'ふたりの記録ページ'}</p>
@@ -522,21 +521,60 @@ function renderPageListEntry(post) {
   `;
 }
 
-function renderPageList(state) {
+function renderPhotoListEntry(memory) {
+  const dateText = new Date(memory.createdAt || Date.now()).toLocaleDateString('ja-JP').replace(/\//g, '.');
+  return `
+    <article class="couple-album-page couple-album-page--photo">
+      <div class="couple-album-page__image">
+        ${memory.imageData ? `<img src="${memory.imageData}" alt="" />` : '<span>photo</span>'}
+      </div>
+      <div class="couple-album-page__meta">
+        <p class="couple-kicker">${dateText}</p>
+      </div>
+    </article>
+  `;
+}
+
+function renderAlbumEmpty(type = 'pages') {
+  const isPhoto = type === 'photo';
+  return `
+    <section class="couple-card couple-date-detail">
+      <p class="couple-kicker">${isPhoto ? 'photo' : 'pages'}</p>
+      <h2>${isPhoto ? '写真はまだありません' : 'ページはまだありません'}</h2>
+      <p>${isPhoto ? '記録で写真を残すと、ここに一覧で表示されます。' : 'ページを作ると、ここに一覧で表示されます。'}</p>
+      ${isPhoto ? '' : `
+        <div class="couple-date-detail__actions">
+          <button type="button" data-home-nav="compose">ページを作る</button>
+        </div>
+      `}
+    </section>
+  `;
+}
+
+function renderPageList(state, uiState = {}) {
+  const activeAlbumTab = uiState.albumTab === 'photo' ? 'photo' : 'pages';
   const posts = (state.posts || [])
     .slice()
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const photos = (state.recordMemories || [])
+    .filter((memory) => memory.imageData)
+    .slice()
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  const items = activeAlbumTab === 'photo' ? photos : posts;
 
   return `
     ${renderBrand()}
-    <button class="couple-list-back" type="button" data-list-back>${getIcon('returnLeft')} 戻る</button>
     <header class="couple-page-title">
       <h1>pages</h1>
       <p>作成済みページを一覧で確認できます。</p>
     </header>
-    <section class="couple-date-list-page">
-      ${posts.length
-        ? posts.map(renderPageListEntry).join('')
+    <div class="couple-album-tabs" role="tablist" aria-label="アルバム表示">
+      <button class="${activeAlbumTab === 'pages' ? 'is-active' : ''}" type="button" data-album-tab="pages" role="tab" aria-selected="${activeAlbumTab === 'pages'}">pages</button>
+      <button class="${activeAlbumTab === 'photo' ? 'is-active' : ''}" type="button" data-album-tab="photo" role="tab" aria-selected="${activeAlbumTab === 'photo'}">photo</button>
+    </div>
+    <section class="couple-date-list-page couple-album-grid">
+      ${items.length
+        ? (activeAlbumTab === 'photo' ? photos.map(renderPhotoListEntry).join('') : posts.map(renderPageListEntry).join(''))
         : `
           <section class="couple-card couple-date-detail">
             <p class="couple-kicker">pages</p>
@@ -781,7 +819,7 @@ export function renderSearch(state, uiState = {}) {
         : view === 'dateList'
           ? renderDateList(state, uiState)
           : view === 'pageList'
-            ? renderPageList(state)
+            ? renderPageList(state, uiState)
             : view === 'draftList'
               ? renderDraftList(state)
               : view === 'todoList'

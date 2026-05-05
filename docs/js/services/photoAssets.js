@@ -80,11 +80,12 @@ function photoAssetToRecordMemory(asset, imageData = '') {
   };
 }
 
-export async function savePhotoAsset({ imageData, sourceType = 'album', frame = 'landscape', place = '', memo = '' }) {
+export async function savePhotoAsset({ imageData, sourceType = 'album', frame = 'landscape', place = '', memo = '', createdAt = '' }) {
   if (!imageData) throw new Error('Photo image data is required.');
   const client = requireSupabase();
   const { user, memorySpaceId } = await ensureProfileAndMemorySpace();
-  const now = new Date();
+  const capturedAt = createdAt ? new Date(createdAt) : new Date();
+  const now = Number.isNaN(capturedAt.getTime()) ? new Date() : capturedAt;
   const assetId = crypto.randomUUID();
   const storagePath = `${memorySpaceId}/${assetId}/original.webp`;
   const thumbnailPath = `${memorySpaceId}/${assetId}/thumbnail.webp`;

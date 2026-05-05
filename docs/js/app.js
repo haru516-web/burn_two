@@ -2118,6 +2118,14 @@ function bindSearchEvents() {
     });
   });
 
+  document.querySelectorAll('[data-album-tab]').forEach((button) => {
+    button.addEventListener('click', () => {
+      uiState.albumTab = button.dataset.albumTab === 'photo' ? 'photo' : 'pages';
+      uiState.coupleView = 'pageList';
+      renderScreen();
+    });
+  });
+
   document.querySelectorAll('[data-date-list-tab]').forEach((button) => {
     button.addEventListener('click', () => {
       uiState.dateListTab = button.dataset.dateListTab === 'past' ? 'past' : 'upcoming';
@@ -2354,6 +2362,10 @@ function bindSearchEvents() {
 function bindScreenNavigationEvents() {
   document.querySelectorAll('[data-home-nav]').forEach((button) => {
     button.addEventListener('click', () => {
+      if (button.hasAttribute('data-bottom-album')) {
+        uiState.coupleView = 'pageList';
+        uiState.albumTab = 'pages';
+      }
       navigate(button.dataset.homeNav);
     });
   });
@@ -7852,12 +7864,27 @@ function bindRecordEvents() {
     });
   });
 
+  document.querySelectorAll('[data-record-date-choice]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const date = button.dataset.recordDateChoice || getTodayDateKey();
+      uiState.recordDate = date === getTodayDateKey() ? null : date;
+      uiState.recordStage = 'home';
+      uiState.recordDraft = null;
+      uiState.recordSelectedIds = [];
+      uiState.recordEditingId = null;
+      renderScreen();
+    });
+  });
+
   document.querySelectorAll('[data-record-open-camera]').forEach((button) => {
     button.addEventListener('click', () => {
+      const recordDate = uiState.recordDate || getTodayDateKey();
+      const time = new Date().toTimeString().slice(0, 5);
       uiState.recordStage = 'camera';
       uiState.recordDraft = {
         imageData: '',
-        time: new Date().toTimeString().slice(0, 5),
+        time,
+        createdAt: `${recordDate}T${time}:00`,
         place: '',
         memo: '',
         filter: 'none',

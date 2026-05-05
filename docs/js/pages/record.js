@@ -38,6 +38,12 @@ function getDateFromKey(dateKey = '') {
   return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
 }
 
+function addDaysToDateKey(dateKey = '', days = 0) {
+  const date = getDateFromKey(dateKey || getTodayDateKey());
+  date.setDate(date.getDate() + days);
+  return getDateKeyFromValue(date);
+}
+
 function formatPageDate(dateKey = '') {
   const date = getDateFromKey(dateKey || getTodayDateKey());
   return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
@@ -98,7 +104,10 @@ function renderRecordPreviewCard(memories) {
 }
 
 function renderRecordHome(memories, recordDate = '') {
-  const dateLabel = recordDate ? formatTodayLabel(getDateFromKey(recordDate)) : formatTodayLabel();
+  const todayKey = getTodayDateKey();
+  const yesterdayKey = addDaysToDateKey(todayKey, -1);
+  const activeDate = recordDate || todayKey;
+  const dateLabel = formatTodayLabel(getDateFromKey(activeDate));
   const sectionTitle = recordDate ? '選択した日の思い出' : '今日の思い出';
   return `
     <section class="record-page record-page--home">
@@ -106,6 +115,11 @@ function renderRecordHome(memories, recordDate = '') {
         <p class="record-header__title">記録</p>
         <div class="record-today-mark"><span></span><strong>TODAY</strong><span></span></div>
       </header>
+
+      <div class="record-date-switch" aria-label="記録する日">
+        <button class="${activeDate === todayKey ? 'is-selected' : ''}" type="button" data-record-date-choice="${todayKey}">今日</button>
+        <button class="${activeDate === yesterdayKey ? 'is-selected' : ''}" type="button" data-record-date-choice="${yesterdayKey}">昨日</button>
+      </div>
 
       <section class="record-start-card">
         <div class="record-start-card__copy">

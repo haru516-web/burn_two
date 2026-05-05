@@ -51,36 +51,93 @@ function getMonthLabel(dateString) {
   return `${year}年${month}月`;
 }
 
-function renderCalendar(couple = {}) {
+function getPostTitle(post) {
+  const headline = String(post.composeData?.headline || '').trim();
+  if (headline && headline.toLowerCase() !== 'text') return headline;
+  const caption = String(post.caption || '').split('/')[0].trim();
+  return caption || 'ふたりのページ';
+}
+
+function getPostsForDate(state = {}, dateString = '') {
+  return (state.posts || [])
+    .filter((post) => post.createdAt?.slice(0, 10) === dateString)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+function renderSelectedDatePages(posts = []) {
+  const post = posts[0];
+  if (!post) {
+    return '<div class="couple-selected-date__page couple-selected-date__page--empty"><span>pages</span></div>';
+  }
+
+  const title = getPostTitle(post);
+  return `
+    <button class="couple-selected-date__page" type="button" data-open-preview="${post.id}" aria-label="selected page">
+      ${post.imageData ? `<img src="${post.imageData}" alt="${title}" />` : '<span>pages</span>'}
+    </button>
+  `;
+}
+function renderNextDateButton(couple = {}) {
   const nextEntry = (couple.calendarEntries || []).find((entry) => entry.id === couple.nextDateId)
     || (couple.calendarEntries || [])[0];
-  const monthDate = nextEntry?.date || getTodayDateKey();
-  const calendarDays = buildCalendarDays(monthDate);
-  const markedDates = new Map((couple.calendarEntries || []).map((entry, index) => [
-    entry.date,
-    index % 2 === 0 ? 'rose' : 'sand',
-  ]));
+
+  if (!nextEntry) {
+    return `
+      <article class="couple-next-date-column couple-card">
+        <p class="couple-kicker">次のデート</p>
+        <h2>未定</h2>
+        <p>予定はまだありません。</p>
+      </article>
+    `;
+  }
+
+  const date = nextEntry?.date ? new Date(`${nextEntry.date}T00:00:00`) : null;
+  const dateLabel = date && !Number.isNaN(date.getTime())
+    ? `${date.getMonth() + 1}/${date.getDate()} ${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()]}`
+    : '';
+  const title = nextEntry.title || 'ふたりの予定';
+  const time = nextEntry.time || '時間未設定';
+  const place = nextEntry.place || '場所未設定';
+
   return `
-    <section class="couple-card couple-calendar-card" aria-label="カレンダー">
-      <div class="couple-section-head">
-        <h1>カレンダー</h1>
-        <div class="couple-month">
-          <span>2025年5月</span>
-          <span>${getIcon('chevronRight')}</span>
-        </div>
-      </div>
-      <div class="couple-calendar">
-        ${['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map((day) => `<span class="couple-calendar__dow">${day}</span>`).join('')}
-        ${calendarWeeks.flatMap((week, weekIndex) => week.map((day, dayIndex) => {
-          const inactive = (weekIndex === 0 && dayIndex < 3) || (weekIndex === 4 && dayIndex === 6);
-          const mark = markedDays.get(day) || ({ 3: 'rose', 10: 'sand', 24: 'rose' })[day];
-          return `<span class="couple-calendar__day ${inactive ? 'is-muted' : ''} ${mark ? `is-marked is-${mark}` : ''}">${day}</span>`;
-        })).join('')}
-      </div>
-    </section>
+    <article class="couple-next-date-column couple-card" data-home-calendar-date="${nextEntry.date || getTodayDateKey()}">
+      <p class="couple-kicker">次のデート</p>
+      <h2>${dateLabel}</h2>
+      <p>${title}</p>
+      <p>${time}</p>
+      <p>${place}</p>
+    </article>
   `;
 }
 
+function renderSelectedDateInfo(couple = {}, selectedDate = '') {
+  const dateKey = selectedDate || getTodayDateKey();
+  const entry = (couple.calendarEntries || []).find((item) => item.date === dateKey);
+  const date = new Date(`${dateKey}T00:00:00`);
+  const dateLabel = !Number.isNaN(date.getTime())
+    ? `${date.getMonth() + 1}/${date.getDate()} ${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()]}`
+    : dateKey;
+
+  if (!entry) {
+    return `
+      <article class="couple-selected-date-info couple-card">
+        <p class="couple-kicker">選択した日</p>
+        <h2>${dateLabel}</h2>
+        <p>予定はまだありません。</p>
+      </article>
+    `;
+  }
+
+  return `
+    <article class="couple-selected-date-info couple-card">
+      <p class="couple-kicker">選択した日</p>
+      <h2>${dateLabel}</h2>
+      <p>${entry.title || 'ふたりの予定'}</p>
+      <p>${entry.time || '時間未設定'}</p>
+      <p>${entry.place || '場所未設定'}</p>
+    </article>
+  `;
+}
 function renderCalendarDynamic(couple = {}, selectedDate = '') {
   const nextEntry = (couple.calendarEntries || []).find((entry) => entry.id === couple.nextDateId)
     || (couple.calendarEntries || [])[0];
@@ -115,96 +172,29 @@ function renderCalendarDynamic(couple = {}, selectedDate = '') {
           `;
         }).join('')}
       </div>
-    </section>
-  `;
-}
-
-function renderNextDate(couple = {}) {
-  const nextEntry = (couple.calendarEntries || []).find((entry) => entry.id === couple.nextDateId)
-    || (couple.calendarEntries || [])[0];
-  if (!nextEntry) {
-    return `
-    <section class="couple-next-date-row" aria-label="次のデートと予定追加">
-      <article class="couple-next-date couple-card">
-        <div class="couple-next-date__body">
-          <p class="couple-kicker">次のデート</p>
-          <h2>予定はまだありません</h2>
-          <p>デートを追加すると、ここに日時と内容が表示されます。</p>
-        </div>
-      </article>
-      <button class="couple-add-date-card couple-card" type="button" data-open-date-add>
-        デートを追加
-        ${getIcon('chevronRight')}
-      </button>
-    </section>
-  `;
-  }
-  const date = nextEntry?.date ? new Date(`${nextEntry.date}T00:00:00`) : null;
-  const dateLabel = date && !Number.isNaN(date.getTime())
-    ? `${date.getMonth() + 1}/${date.getDate()} ${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()]}`
-    : '';
-  const title = nextEntry.title || 'ふたりの予定';
-  const time = nextEntry.time || '時間未設定';
-  const note = nextEntry.note || 'この日の予定をふたりで整えます。';
-  return `
-    <section class="couple-next-date-row" aria-label="次のデートと予定追加">
-      <article class="couple-next-date couple-card">
-        <div class="couple-next-date__body">
-          <p class="couple-kicker">次のデート</p>
-          <h2>${dateLabel}　${title}</h2>
-          <p>${time}</p>
-          <p>${note}</p>
-        </div>
-      </article>
-      <button class="couple-add-date-card couple-card" type="button" data-open-date-add>
-        デートを追加
-        ${getIcon('chevronRight')}
+      <button class="couple-add-date-fab" type="button" aria-label="デートを追加" data-open-date-add>
+        <span aria-hidden="true">+</span>
       </button>
     </section>
   `;
 }
 
-function renderSelectedDatePlan(couple = {}, selectedDate = '') {
+function renderSelectedDatePlan(state = {}, couple = {}, selectedDate = '') {
   const dateKey = selectedDate || getTodayDateKey();
-  const entry = (couple.calendarEntries || []).find((item) => item.date === dateKey);
-  const date = new Date(`${dateKey}T00:00:00`);
-  const dateLabel = !Number.isNaN(date.getTime())
-    ? `${date.getMonth() + 1}/${date.getDate()} ${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()]}`
-    : dateKey;
-
-  if (!entry) {
-    return `
-      <section class="couple-selected-date-row" aria-label="selected date and add date">
-        <article class="couple-selected-date couple-card">
-        <p class="couple-kicker">選択した日</p>
-        <h2>${dateLabel}</h2>
-        <p>この日の予定はまだありません。</p>
-        </article>
-        <button class="couple-add-date-card couple-add-date-card--memory couple-card" type="button" data-open-selected-date-memories data-selected-date-memories-date="${dateKey}">
-          選択した日の思い出を見る
-          ${getIcon('chevronRight')}
-        </button>
-      </section>
-    `;
-  }
+  const posts = getPostsForDate(state, dateKey);
 
   return `
-    <section class="couple-selected-date-row" aria-label="selected date and add date">
+    <section class="couple-selected-date-row" aria-label="selected date and next date">
       <article class="couple-selected-date couple-card">
-      <p class="couple-kicker">選択した日</p>
-      <h2>${dateLabel}　${entry.title}</h2>
-      <p>${entry.time || '時間未設定'}</p>
-      <p>${entry.place || '場所未設定'}</p>
-      <p>${entry.note || 'この日の予定をふたりで整えます。'}</p>
+        ${renderSelectedDatePages(posts)}
       </article>
-      <button class="couple-add-date-card couple-add-date-card--memory couple-card" type="button" data-open-selected-date-memories data-selected-date-memories-date="${dateKey}">
-        選択した日の思い出を見る
-        ${getIcon('chevronRight')}
-      </button>
+      <div class="couple-date-side-column">
+        ${renderNextDateButton(couple)}
+        ${renderSelectedDateInfo(couple, dateKey)}
+      </div>
     </section>
   `;
 }
-
 export function renderHome(state, uiState = {}) {
   const selectedDate = uiState.selectedCalendarDate || getTodayDateKey();
   return `
@@ -212,8 +202,7 @@ export function renderHome(state, uiState = {}) {
       <div class="couple-screen">
         ${renderBrand()}
         ${renderCalendarDynamic(state.couple || {}, selectedDate)}
-        ${renderNextDate(state.couple || {})}
-        ${renderSelectedDatePlan(state.couple || {}, selectedDate)}
+        ${renderSelectedDatePlan(state, state.couple || {}, selectedDate)}
       </div>
     </section>
   `;

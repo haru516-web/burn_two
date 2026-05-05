@@ -44,10 +44,6 @@ export function renderProfile(state, uiState = {}) {
             <span>デート一覧</span>
             ${getIcon('chevronRight')}
           </button>
-          <button class="futari-date-list-link" type="button" data-open-pages-list>
-            <span>pages</span>
-            ${getIcon('chevronRight')}
-          </button>
           <button class="futari-date-list-link" type="button" data-open-draft-list>
             <span>draft</span>
             ${getIcon('chevronRight')}

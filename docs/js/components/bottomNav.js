@@ -3,6 +3,7 @@ import { getIcon } from './icons.js';
 export function renderBottomNav(screen) {
   const activeScreen = screen === 'timeline' ? 'home' : screen;
   const isHomeActive = activeScreen === 'home';
+  const isAlbumActive = activeScreen === 'search';
   const isRecordActive = activeScreen === 'record';
   const isMagazineActive = activeScreen === 'magazine';
   const isProfileActive = activeScreen === 'profile';
@@ -17,9 +18,9 @@ export function renderBottomNav(screen) {
         <span class="timeline-bottom-nav__icon" aria-hidden="true">${getIcon('home')}</span>
         <span class="timeline-bottom-nav__label">ホーム</span>
       </button>
-      <button class="timeline-bottom-nav__item timeline-bottom-nav__item--compose" type="button" data-home-nav="compose" aria-label="編集">
-        <span class="timeline-bottom-nav__icon" aria-hidden="true">${getIcon('post')}</span>
-        <span class="timeline-bottom-nav__label">編集</span>
+      <button class="timeline-bottom-nav__item ${isAlbumActive ? 'is-active' : ''}" type="button" data-home-nav="search" data-bottom-album aria-label="アルバム">
+        <span class="timeline-bottom-nav__icon" aria-hidden="true">${getIcon('image')}</span>
+        <span class="timeline-bottom-nav__label">アルバム</span>
       </button>
       <button class="timeline-bottom-nav__item ${isRecordActive ? 'is-active' : ''}" type="button" data-home-nav="record" aria-label="記録">
         <span class="timeline-bottom-nav__icon" aria-hidden="true">${getIcon('camera')}</span>
