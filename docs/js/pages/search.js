@@ -730,11 +730,11 @@ const PROFILE_SHEET_FIELDS = [
   ['best1', 'best 1', 14.4, 86.9, 27.5, 1.9],
   ['best2', 'best 2', 14.4, 91.0, 27.5, 1.9],
   ['best3', 'best 3', 14.4, 95.0, 27.5, 1.9],
-  ['dateSpot', 'date spot', 58.8, 45.2, 35.4, 2.7, 'textarea'],
-  ['freeTime', 'free time', 58.8, 53.1, 35.4, 2.7, 'textarea'],
-  ['admiredPerson', 'admired person', 58.8, 60.9, 35.4, 2.7, 'textarea'],
-  ['oshiPerson', 'oshi person', 58.8, 68.7, 35.4, 2.7, 'textarea'],
-  ['recentHappy', 'recent happy', 58.8, 76.5, 35.4, 2.7, 'textarea'],
+  ['dateSpot', 'date spot', 60.0, 43.2, 32.8, 2.5, 'textarea'],
+  ['freeTime', 'free time', 60.0, 50.6, 32.8, 2.5, 'textarea'],
+  ['admiredPerson', 'admired person', 60.0, 58.1, 32.8, 2.5, 'textarea'],
+  ['oshiPerson', 'oshi person', 60.0, 65.6, 32.8, 2.5, 'textarea'],
+  ['recentHappy', 'recent happy', 60.0, 73.1, 32.8, 2.5, 'textarea'],
   ['freeSpace', 'free space', 53.2, 84.2, 42.0, 11.5, 'textarea'],
 ];
 
