@@ -693,6 +693,10 @@
 .couple-profile-sheet-form {
   display: grid;
   gap: 12px;
+  width: 100%;
+  max-width: 900px;
+  justify-self: center;
+  justify-items: center;
 }
 
 .couple-calendar-page--profile-book .couple-screen {
@@ -715,10 +719,16 @@
   font-size: 1.45rem;
 }
 
+.couple-calendar-page--profile-book .couple-date-list-page {
+  width: 100%;
+  justify-items: center;
+}
+
 .couple-profile-sheet {
   container-type: inline-size;
   position: relative;
-  width: min(calc(100vw - 12px), 900px);
+  width: min(100%, 900px);
+  max-width: 100%;
   margin: 0 auto;
   aspect-ratio: 1072 / 1536;
   overflow: hidden;
@@ -750,8 +760,8 @@
   color: #111;
   background: rgba(255, 255, 255, 0.18);
   font-family: "Hachi Maru Pop", "Kosugi Maru", "Zen Kaku Gothic New", cursive;
-  font-size: clamp(6px, 1.75cqw, 12px);
-  line-height: 1.12;
+  font-size: clamp(8px, 2.15cqw, 15px);
+  line-height: 1.16;
   outline: 1px solid transparent;
 }
 
@@ -760,8 +770,13 @@
   outline-color: rgba(210, 132, 214, 0.74);
 }
 
+.couple-profile-sheet-field[name^='birthday'] {
+  padding: 0 1px;
+  text-align: center;
+}
+
 textarea.couple-profile-sheet-field {
-  padding-top: 1px;
+  padding-top: 2px;
   resize: none;
 }
 

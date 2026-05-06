@@ -2403,6 +2403,12 @@ function bindSearchEvents() {
   });
 
   document.querySelectorAll('[data-profile-book-form]').forEach((form) => {
+    form.querySelectorAll('input[name^="birthday"]').forEach((input) => {
+      input.addEventListener('input', () => {
+        input.value = input.value.replace(/\D/g, '').slice(0, 2);
+      });
+    });
+
     form.addEventListener('submit', (event) => {
       event.preventDefault();
       persistProfileSheet(getProfileSheetFormValues(form));
@@ -7840,7 +7846,13 @@ async function saveRecordPhotoToDevice() {
 function getProfileSheetFormValues(form) {
   const formData = new FormData(form);
   return Object.fromEntries(
-    Array.from(formData.entries()).map(([key, value]) => [key, String(value || '').trim()]),
+    Array.from(formData.entries()).map(([key, value]) => {
+      const text = String(value || '').trim();
+      if (key === 'birthdayYear' || key === 'birthdayMonth' || key === 'birthdayDay') {
+        return [key, text.replace(/\D/g, '').slice(0, 2)];
+      }
+      return [key, text];
+    }),
   );
 }
 
@@ -7876,7 +7888,7 @@ function wrapCanvasText(ctx, text, maxWidth) {
 function drawProfileSheetText(ctx, text, rect, isTextarea = false) {
   const value = String(text || '').trim();
   if (!value) return;
-  const fontSize = Math.max(10, Math.min(18, rect.height * (isTextarea ? 0.42 : 0.78)));
+  const fontSize = Math.max(12, Math.min(22, rect.height * (isTextarea ? 0.5 : 0.86)));
   const lineHeight = fontSize * 1.28;
   ctx.save();
   ctx.fillStyle = '#111';

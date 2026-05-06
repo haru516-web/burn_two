@@ -707,9 +707,9 @@ function renderTodoList(state, uiState = {}) {
 const PROFILE_SHEET_FIELDS = [
   ['name', 'name', 24.8, 11.2, 24.4, 1.8],
   ['nickname', 'nickname', 27.0, 15.2, 22.4, 1.8],
-  ['birthdayYear', 'birthday year', 18.2, 20.3, 10.6, 1.8],
-  ['birthdayMonth', 'birthday month', 37.0, 20.3, 5.0, 1.8],
-  ['birthdayDay', 'birthday day', 48.3, 20.3, 5.0, 1.8],
+  ['birthdayYear', 'birthday year', 26.4, 18.9, 3.2, 1.5],
+  ['birthdayMonth', 'birthday month', 33.8, 18.9, 2.6, 1.5],
+  ['birthdayDay', 'birthday day', 40.9, 18.9, 2.6, 1.5],
   ['zodiac', 'zodiac', 24.0, 24.0, 10.8, 1.8],
   ['bloodType', 'blood type', 70.0, 11.2, 18.0, 1.8],
   ['favoriteColor', 'favorite color', 70.0, 15.2, 18.0, 1.8],
@@ -717,24 +717,24 @@ const PROFILE_SHEET_FIELDS = [
   ['x', 'X', 21.2, 29.8, 16.0, 1.8],
   ['instagram', 'Instagram', 47.3, 29.8, 16.8, 1.8],
   ['otherSns', 'other SNS', 73.0, 29.8, 17.5, 1.8],
-  ['favoriteFood', 'favorite food', 7.6, 46.0, 10.0, 3.6, 'textarea'],
-  ['favoriteDrink', 'favorite drink', 22.8, 46.0, 10.0, 3.6, 'textarea'],
-  ['favoriteAnimal', 'favorite animal', 37.6, 46.0, 10.0, 3.6, 'textarea'],
-  ['favoriteGame', 'favorite game', 7.6, 56.9, 10.0, 3.6, 'textarea'],
-  ['favoriteAnime', 'favorite anime', 22.8, 56.9, 10.0, 3.6, 'textarea'],
-  ['favoriteCharacter', 'favorite character', 37.6, 56.9, 10.0, 3.6, 'textarea'],
-  ['favoriteSong', 'favorite song', 7.6, 67.4, 10.0, 3.6, 'textarea'],
-  ['favoriteArtist', 'favorite artist', 22.8, 67.4, 10.0, 3.6, 'textarea'],
-  ['favoriteCelebrity', 'favorite celebrity', 37.6, 67.4, 10.0, 3.6, 'textarea'],
+  ['favoriteFood', 'favorite food', 5.5, 44.2, 10.8, 4.1, 'textarea'],
+  ['favoriteDrink', 'favorite drink', 20.2, 44.2, 10.8, 4.1, 'textarea'],
+  ['favoriteAnimal', 'favorite animal', 35.0, 44.2, 10.8, 4.1, 'textarea'],
+  ['favoriteGame', 'favorite game', 5.5, 55.1, 10.8, 4.1, 'textarea'],
+  ['favoriteAnime', 'favorite anime', 20.2, 55.1, 10.8, 4.1, 'textarea'],
+  ['favoriteCharacter', 'favorite character', 35.0, 55.1, 10.8, 4.1, 'textarea'],
+  ['favoriteSong', 'favorite song', 5.5, 66.5, 10.8, 4.1, 'textarea'],
+  ['favoriteArtist', 'favorite artist', 20.2, 66.5, 10.8, 4.1, 'textarea'],
+  ['favoriteCelebrity', 'favorite celebrity', 35.0, 66.5, 10.8, 4.1, 'textarea'],
   ['bestTitle', 'MY BEST 3 title', 15.0, 82.7, 26.5, 1.8],
   ['best1', 'best 1', 14.4, 86.9, 27.5, 1.9],
   ['best2', 'best 2', 14.4, 91.0, 27.5, 1.9],
   ['best3', 'best 3', 14.4, 95.0, 27.5, 1.9],
-  ['dateSpot', 'date spot', 60.8, 43.8, 30.8, 2.4, 'textarea'],
-  ['freeTime', 'free time', 60.8, 52.5, 30.8, 2.4, 'textarea'],
-  ['admiredPerson', 'admired person', 60.8, 61.2, 30.8, 2.4, 'textarea'],
-  ['oshiPerson', 'oshi person', 60.8, 69.9, 30.8, 2.4, 'textarea'],
-  ['recentHappy', 'recent happy', 60.8, 78.6, 30.8, 2.4, 'textarea'],
+  ['dateSpot', 'date spot', 58.8, 45.2, 35.4, 2.7, 'textarea'],
+  ['freeTime', 'free time', 58.8, 53.1, 35.4, 2.7, 'textarea'],
+  ['admiredPerson', 'admired person', 58.8, 60.9, 35.4, 2.7, 'textarea'],
+  ['oshiPerson', 'oshi person', 58.8, 68.7, 35.4, 2.7, 'textarea'],
+  ['recentHappy', 'recent happy', 58.8, 76.5, 35.4, 2.7, 'textarea'],
   ['freeSpace', 'free space', 53.2, 84.2, 42.0, 11.5, 'textarea'],
 ];
 
@@ -780,10 +780,13 @@ function renderProfileBook(state) {
   const renderField = ([name, label, left, top, width, height, type = 'input']) => {
     const style = `--x:${left}%;--y:${top}%;--w:${width}%;--h:${height}%;`;
     const value = escapeDateAddText(sheet[name] || '');
+    const numericAttrs = name.startsWith('birthday')
+      ? ' inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off"'
+      : ' autocomplete="off"';
     if (type === 'textarea') {
       return `<textarea class="couple-profile-sheet-field" style="${style}" name="${name}" aria-label="${label}">${value}</textarea>`;
     }
-    return `<input class="couple-profile-sheet-field" style="${style}" name="${name}" value="${value}" aria-label="${label}" autocomplete="off" />`;
+    return `<input class="couple-profile-sheet-field" style="${style}" name="${name}" value="${value}" aria-label="${label}"${numericAttrs} />`;
   };
   return `
     ${renderBrand()}
