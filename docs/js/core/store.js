@@ -6,6 +6,7 @@ const defaultState = {
     name: 'you',
     bio: 'A small local profile to collect your memories.',
     avatarData: '',
+    profileSheet: {},
   },
   posts: [],
   drafts: [],
@@ -134,6 +135,9 @@ function normalizeState(saved) {
       name: saved.profile?.name || defaultState.profile.name,
       bio: saved.profile?.bio || defaultState.profile.bio,
       avatarData: saved.profile?.avatarData || '',
+      profileSheet: saved.profile?.profileSheet && typeof saved.profile.profileSheet === 'object'
+        ? saved.profile.profileSheet
+        : {},
     },
     posts: Array.isArray(saved.posts) ? saved.posts.map(normalizePost) : [],
     drafts: Array.isArray(saved.drafts) ? saved.drafts.map(normalizeDraft) : [],
@@ -382,6 +386,9 @@ export function updateProfile(profile) {
   next.profile.name = profile.name;
   next.profile.bio = profile.bio;
   next.profile.avatarData = nextAvatar;
+  next.profile.profileSheet = profile.profileSheet && typeof profile.profileSheet === 'object'
+    ? profile.profileSheet
+    : (next.profile.profileSheet || {});
   next.posts = next.posts.map((post) => (
     post.authorName === previousName
       ? {

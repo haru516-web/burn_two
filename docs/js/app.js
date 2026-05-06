@@ -5,7 +5,7 @@ import { getState, addPost, upsertPostCache, upsertPostCacheMany, replaceRecordM
 import { renderOpening } from './pages/opening.js';
 import { renderInvite } from './pages/invite.js';
 import { renderHome, renderTimeline } from './pages/timeline.js';
-import { DATE_PLANS, renderSearch } from './pages/search.js';
+import { DATE_PLANS, PROFILE_SHEET_FIELDS, renderSearch } from './pages/search.js';
 import { renderCompose } from './pages/compose.js';
 import { renderMagazine } from './pages/magazine.js';
 import { renderProfile } from './pages/profile.js';
@@ -2399,6 +2399,32 @@ function bindSearchEvents() {
       if (!todo) return;
       uiState.todoInputOpen = false;
       renderScreen();
+    });
+  });
+
+  document.querySelectorAll('[data-profile-book-form]').forEach((form) => {
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      persistProfileSheet(getProfileSheetFormValues(form));
+      uiState.coupleView = 'calendar';
+      uiState.screen = 'profile';
+      render();
+    });
+  });
+
+  document.querySelectorAll('[data-profile-sheet-save-image]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const form = button.closest('[data-profile-book-form]');
+      if (!form) return;
+      const previousText = button.textContent;
+      button.disabled = true;
+      button.textContent = '保存中';
+      const profileSheet = getProfileSheetFormValues(form);
+      persistProfileSheet(profileSheet);
+      const saved = await saveProfileSheetToDevice(profileSheet);
+      button.disabled = false;
+      button.textContent = previousText || '端末に保存';
+      if (!saved) return;
     });
   });
 }
@@ -7557,7 +7583,7 @@ function drawLocationPin(ctx, x, y, size) {
   ctx.restore();
 }
 
-function wrapCanvasText(ctx, text, maxWidth) {
+function wrapProfileSheetCanvasText(ctx, text, maxWidth) {
   const source = String(text || '').replace(/\r/g, '').split('\n');
   const lines = [];
   source.forEach((paragraph) => {
@@ -7802,6 +7828,112 @@ async function saveRecordPhotoToDevice() {
   if (navigator.canShare?.({ files: [file] })) {
     try {
       await navigator.share({ files: [file], title: 'Memory photo' });
+      return true;
+    } catch (error) {
+      if (error?.name === 'AbortError') return false;
+    }
+  }
+  downloadBlobFile(blob, filename);
+  return true;
+}
+
+function getProfileSheetFormValues(form) {
+  const formData = new FormData(form);
+  return Object.fromEntries(
+    Array.from(formData.entries()).map(([key, value]) => [key, String(value || '').trim()]),
+  );
+}
+
+function persistProfileSheet(profileSheet) {
+  const currentProfile = getState().profile || {};
+  updateProfile({
+    name: profileSheet.name || currentProfile.name || 'you',
+    bio: currentProfile.bio || '',
+    avatarData: currentProfile.avatarData || '',
+    profileSheet,
+  });
+}
+
+function wrapCanvasText(ctx, text, maxWidth) {
+  const source = String(text || '').replace(/\r\n/g, '\n');
+  const lines = [];
+  source.split('\n').forEach((paragraph) => {
+    let line = '';
+    Array.from(paragraph).forEach((char) => {
+      const nextLine = `${line}${char}`;
+      if (line && ctx.measureText(nextLine).width > maxWidth) {
+        lines.push(line);
+        line = char;
+      } else {
+        line = nextLine;
+      }
+    });
+    lines.push(line);
+  });
+  return lines;
+}
+
+function drawProfileSheetText(ctx, text, rect, isTextarea = false) {
+  const value = String(text || '').trim();
+  if (!value) return;
+  const fontSize = Math.max(10, Math.min(18, rect.height * (isTextarea ? 0.42 : 0.78)));
+  const lineHeight = fontSize * 1.28;
+  ctx.save();
+  ctx.fillStyle = '#111';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.font = `${fontSize}px "Hachi Maru Pop", "Kosugi Maru", "Zen Kaku Gothic New", sans-serif`;
+  const lines = isTextarea ? wrapProfileSheetCanvasText(ctx, value, rect.width) : [value];
+  lines.slice(0, Math.max(1, Math.floor(rect.height / lineHeight))).forEach((line, index) => {
+    ctx.fillText(line, rect.x, rect.y + index * lineHeight, rect.width);
+  });
+  ctx.restore();
+}
+
+async function renderProfileSheetToCanvasDataUrl(profileSheet = {}) {
+  await document.fonts?.load?.('16px "Hachi Maru Pop"');
+  const width = 1072;
+  const height = 1536;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return '';
+  ctx.fillStyle = '#fff0fb';
+  ctx.fillRect(0, 0, width, height);
+  const sheetImage = await loadCanvasImage('./image/profile_sheets/profile_sheet1.png');
+  if (sheetImage) {
+    ctx.drawImage(sheetImage, 0, 0, width, height);
+  }
+  PROFILE_SHEET_FIELDS.forEach(([name, , left, top, fieldWidth, fieldHeight, type = 'input']) => {
+    drawProfileSheetText(ctx, profileSheet[name], {
+      x: (left / 100) * width,
+      y: (top / 100) * height,
+      width: (fieldWidth / 100) * width,
+      height: (fieldHeight / 100) * height,
+    }, type === 'textarea');
+  });
+  return canvas.toDataURL('image/png');
+}
+
+function getProfileSheetFilename() {
+  const date = new Date();
+  return `profile-sheet-${formatDateKey(date.getFullYear(), date.getMonth() + 1, date.getDate()).replaceAll('-', '')}.png`;
+}
+
+async function saveProfileSheetToDevice(profileSheet = {}) {
+  const imageData = await renderProfileSheetToCanvasDataUrl(profileSheet);
+  const blob = composeDataUrlToBlob(imageData);
+  if (!blob) return false;
+  const filename = getProfileSheetFilename();
+  if (!isMobileLikeDevice()) {
+    downloadBlobFile(blob, filename);
+    return true;
+  }
+  const file = new File([blob], filename, { type: blob.type || 'image/png' });
+  if (navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: 'プロフィール帳' });
       return true;
     } catch (error) {
       if (error?.name === 'AbortError') return false;
@@ -8348,6 +8480,36 @@ function bindProfileEvents() {
   document.querySelectorAll('[data-profile-toggle-todo]').forEach((button) => {
     button.addEventListener('click', () => {
       toggleCoupleTodo(button.dataset.profileToggleTodo);
+      renderScreen();
+    });
+  });
+
+  document.querySelectorAll('[data-profile-book-open]').forEach((button) => {
+    button.addEventListener('click', () => {
+      uiState.coupleView = 'profileBook';
+      uiState.screen = 'search';
+      render();
+    });
+  });
+
+  document.querySelectorAll('[data-profile-book-close]').forEach((button) => {
+    button.addEventListener('click', () => {
+      uiState.profileSection = null;
+      renderScreen();
+    });
+  });
+
+  document.querySelectorAll('[data-profile-book-form]').forEach((form) => {
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const formData = new FormData(form);
+      const currentProfile = getState().profile || {};
+      updateProfile({
+        name: String(formData.get('name') || currentProfile.name || 'you').trim() || 'you',
+        bio: String(formData.get('bio') || '').trim(),
+        avatarData: currentProfile.avatarData || '',
+      });
+      uiState.profileSection = null;
       renderScreen();
     });
   });

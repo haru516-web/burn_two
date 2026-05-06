@@ -704,6 +704,108 @@ function renderTodoList(state, uiState = {}) {
   `;
 }
 
+const PROFILE_SHEET_FIELDS = [
+  ['name', 'name', 24.8, 11.2, 24.4, 1.8],
+  ['nickname', 'nickname', 27.0, 15.2, 22.4, 1.8],
+  ['birthdayYear', 'birthday year', 18.2, 20.3, 10.6, 1.8],
+  ['birthdayMonth', 'birthday month', 37.0, 20.3, 5.0, 1.8],
+  ['birthdayDay', 'birthday day', 48.3, 20.3, 5.0, 1.8],
+  ['zodiac', 'zodiac', 24.0, 24.0, 10.8, 1.8],
+  ['bloodType', 'blood type', 70.0, 11.2, 18.0, 1.8],
+  ['favoriteColor', 'favorite color', 70.0, 15.2, 18.0, 1.8],
+  ['favoriteThing', 'favorite thing', 70.0, 19.2, 18.0, 1.8],
+  ['x', 'X', 21.2, 29.8, 16.0, 1.8],
+  ['instagram', 'Instagram', 47.3, 29.8, 16.8, 1.8],
+  ['otherSns', 'other SNS', 73.0, 29.8, 17.5, 1.8],
+  ['favoriteFood', 'favorite food', 7.6, 46.0, 10.0, 3.6, 'textarea'],
+  ['favoriteDrink', 'favorite drink', 22.8, 46.0, 10.0, 3.6, 'textarea'],
+  ['favoriteAnimal', 'favorite animal', 37.6, 46.0, 10.0, 3.6, 'textarea'],
+  ['favoriteGame', 'favorite game', 7.6, 56.9, 10.0, 3.6, 'textarea'],
+  ['favoriteAnime', 'favorite anime', 22.8, 56.9, 10.0, 3.6, 'textarea'],
+  ['favoriteCharacter', 'favorite character', 37.6, 56.9, 10.0, 3.6, 'textarea'],
+  ['favoriteSong', 'favorite song', 7.6, 67.4, 10.0, 3.6, 'textarea'],
+  ['favoriteArtist', 'favorite artist', 22.8, 67.4, 10.0, 3.6, 'textarea'],
+  ['favoriteCelebrity', 'favorite celebrity', 37.6, 67.4, 10.0, 3.6, 'textarea'],
+  ['bestTitle', 'MY BEST 3 title', 15.0, 82.7, 26.5, 1.8],
+  ['best1', 'best 1', 14.4, 86.9, 27.5, 1.9],
+  ['best2', 'best 2', 14.4, 91.0, 27.5, 1.9],
+  ['best3', 'best 3', 14.4, 95.0, 27.5, 1.9],
+  ['dateSpot', 'date spot', 60.8, 43.8, 30.8, 2.4, 'textarea'],
+  ['freeTime', 'free time', 60.8, 52.5, 30.8, 2.4, 'textarea'],
+  ['admiredPerson', 'admired person', 60.8, 61.2, 30.8, 2.4, 'textarea'],
+  ['oshiPerson', 'oshi person', 60.8, 69.9, 30.8, 2.4, 'textarea'],
+  ['recentHappy', 'recent happy', 60.8, 78.6, 30.8, 2.4, 'textarea'],
+  ['freeSpace', 'free space', 53.2, 84.2, 42.0, 11.5, 'textarea'],
+];
+
+export { PROFILE_SHEET_FIELDS };
+
+function renderProfileBook(state) {
+  const profile = state.profile || {};
+  const sheet = profile.profileSheet || {};
+  const fields = PROFILE_SHEET_FIELDS;
+  const legacyFields = [
+    ['name', 'なまえ', 18.3, 11.5, 31.0, 2.7],
+    ['nickname', 'ニックネーム', 18.3, 15.5, 31.0, 2.7],
+    ['birthdayYear', '生まれた年', 31.0, 19.5, 8.4, 2.7],
+    ['birthdayMonth', '月', 42.8, 19.5, 6.2, 2.7],
+    ['birthdayDay', '日', 53.0, 19.5, 6.2, 2.7],
+    ['zodiac', 'せいざ', 18.3, 23.4, 16.2, 2.7],
+    ['bloodType', 'けつえきがた', 60.0, 11.5, 31.0, 2.7],
+    ['favoriteColor', 'すきないろ', 60.0, 15.5, 31.0, 2.7],
+    ['favoriteThing', 'すきなもの', 60.0, 19.5, 31.0, 2.7],
+    ['x', 'X', 20.0, 29.1, 18.0, 2.4],
+    ['instagram', 'Instagram', 46.2, 29.1, 18.6, 2.4],
+    ['otherSns', 'その他', 72.0, 29.1, 18.6, 2.4],
+    ['favoriteFood', '食べ物', 7.8, 43.3, 10.8, 4.4],
+    ['favoriteDrink', '飲み物', 22.8, 43.3, 10.8, 4.4],
+    ['favoriteAnimal', '動物', 37.9, 43.3, 10.8, 4.4],
+    ['favoriteGame', 'ゲーム', 7.8, 53.6, 10.8, 4.4],
+    ['favoriteAnime', 'アニメ・漫画', 22.8, 53.6, 10.8, 4.4],
+    ['favoriteCharacter', 'キャラクター', 37.9, 53.6, 10.8, 4.4],
+    ['favoriteSong', '歌', 7.8, 64.0, 10.8, 4.4],
+    ['favoriteArtist', 'アーティスト', 22.8, 64.0, 10.8, 4.4],
+    ['favoriteCelebrity', '有名人', 37.9, 64.0, 10.8, 4.4],
+    ['bestTitle', 'MY BEST 3 title', 9.8, 81.3, 32.0, 2.5],
+    ['best1', '1位', 13.2, 85.1, 27.5, 2.5],
+    ['best2', '2位', 13.2, 89.3, 27.5, 2.5],
+    ['best3', '3位', 13.2, 93.5, 27.5, 2.5],
+    ['dateSpot', '一番好きなデートスポット', 60.2, 41.5, 32.0, 4.4, 'textarea'],
+    ['freeTime', 'ヒマなときなにしてる？', 60.2, 50.2, 32.0, 4.4, 'textarea'],
+    ['admiredPerson', '憧れてる人は？', 60.2, 58.9, 32.0, 4.4, 'textarea'],
+    ['oshiPerson', '好きな人、推してる人は？', 60.2, 67.6, 32.0, 4.4, 'textarea'],
+    ['recentHappy', '最近うれしかったことは？', 60.2, 76.3, 32.0, 4.4, 'textarea'],
+    ['freeSpace', 'FREE SPACE', 55.5, 86.6, 36.5, 9.0, 'textarea'],
+  ];
+  const renderField = ([name, label, left, top, width, height, type = 'input']) => {
+    const style = `--x:${left}%;--y:${top}%;--w:${width}%;--h:${height}%;`;
+    const value = escapeDateAddText(sheet[name] || '');
+    if (type === 'textarea') {
+      return `<textarea class="couple-profile-sheet-field" style="${style}" name="${name}" aria-label="${label}">${value}</textarea>`;
+    }
+    return `<input class="couple-profile-sheet-field" style="${style}" name="${name}" value="${value}" aria-label="${label}" autocomplete="off" />`;
+  };
+  return `
+    ${renderBrand()}
+    <button class="couple-list-back" type="button" data-list-back>${getIcon('returnLeft')} 戻る</button>
+    <header class="couple-page-title">
+      <h1>プロフィール帳</h1>
+    </header>
+    <section class="couple-date-list-page">
+      <form class="couple-profile-sheet-form" data-profile-book-form>
+        <div class="couple-profile-sheet">
+          <img src="./image/profile_sheets/profile_sheet1.png" alt="" />
+          ${fields.map(renderField).join('')}
+        </div>
+        <div class="couple-profile-sheet-actions">
+          <button class="couple-profile-sheet-save" type="submit">保存</button>
+          <button class="couple-profile-sheet-save" type="button" data-profile-sheet-save-image>端末に保存</button>
+        </div>
+      </form>
+    </section>
+  `;
+}
+
 function renderQuestionOption(question, option, selectedValue) {
   return `
     <button
@@ -825,10 +927,12 @@ export function renderSearch(state, uiState = {}) {
               ? renderDraftList(state)
               : view === 'todoList'
                 ? renderTodoList(state, uiState)
-                : renderCalendar(state, uiState);
+                : view === 'profileBook'
+                  ? renderProfileBook(state)
+                  : renderCalendar(state, uiState);
 
   return `
-    <section class="page page--search couple-calendar-page">
+    <section class="page page--search couple-calendar-page ${view === 'profileBook' ? 'couple-calendar-page--profile-book' : ''}">
       <div class="couple-screen">${body}</div>
     </section>
   `;

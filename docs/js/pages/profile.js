@@ -38,19 +38,6 @@ function renderCalendarIcon() {
   `;
 }
 
-function renderTodoIcon(index) {
-  const icons = [
-    '<path d="M4.8 15.2c1.8 1.4 3.5 1.4 5.2 0 1.8-1.4 3.5-1.4 5.2 0 1.6 1.3 3.2 1.4 4.8.2"/><path d="M6.5 11.3c1.2.8 2.5.8 3.7 0 1.3-.9 2.5-.9 3.8 0 1.2.8 2.4.8 3.6.1"/>',
-    '<path d="M7.2 4.8v6.5M10 4.8v6.5M8.6 11.3v8"/><path d="M15.8 4.8v14.5"/><path d="M15.8 4.8c2.2 1.6 2.8 4.8 0 7.1"/>',
-    '<rect x="6.3" y="8.2" width="11.4" height="9.8" rx="1.6"/><path d="M9.2 8.2V6.7c0-1 .8-1.8 1.8-1.8h2c1 0 1.8.8 1.8 1.8v1.5"/><path d="M6.3 12.2h11.4"/>',
-  ];
-  return `
-    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round">
-      ${icons[index % icons.length]}
-    </svg>
-  `;
-}
-
 function renderTodoRows(todos) {
   const visibleTodos = todos
     .slice()
@@ -66,10 +53,22 @@ function renderTodoRows(todos) {
     <button class="futari-dashboard-todo__row ${todo.done ? 'is-done' : ''}" type="button" data-profile-toggle-todo="${escapeHtml(todo.id)}">
       <span class="futari-dashboard-todo__check" aria-hidden="true">${todo.done ? getIcon('check') : ''}</span>
       <span class="futari-dashboard-todo__title">${title}</span>
-      <span class="futari-dashboard-todo__icon">${renderTodoIcon(index)}</span>
     </button>
   `;
   }).join('');
+}
+
+function renderProfileBook(profile = {}, isOpen = false) {
+  const bio = escapeHtml(profile.bio || '');
+  return `
+    <section class="futari-dashboard-profile-book futari-dashboard-card">
+      <button class="futari-dashboard-profile-book__button" type="button" data-profile-book-open>
+        <img src="./image/profile_sheets/profile_sheet1.png" alt="" />
+        <strong>&#12503;&#12525;&#12501;&#12451;&#12540;&#12523;&#24115;</strong>
+        <small>${bio || '&#33258;&#20998;&#12398;&#12371;&#12392;&#12434;&#20837;&#21147;'}</small>
+      </button>
+    </section>
+  `;
 }
 
 export function renderProfile(state, uiState = {}) {
@@ -127,18 +126,21 @@ export function renderProfile(state, uiState = {}) {
           </article>
         </section>
 
-        <section class="futari-dashboard-todo futari-dashboard-card">
-          <div class="futari-dashboard-section-head">
-            <h2>&#12420;&#12426;&#12383;&#12356;&#12371;&#12392;&#12522;&#12473;&#12488;</h2>
-            <button type="button" data-open-todo-list aria-label="todo list">${getIcon('chevronRight')}</button>
-          </div>
-          <div class="futari-dashboard-todo__list">
-            ${renderTodoRows(todos)}
-          </div>
-          <button class="futari-dashboard-add" type="button" data-profile-open-todo-list>
-            <span>+</span>
-            &#36861;&#21152;&#12377;&#12427;
-          </button>
+        <section class="futari-dashboard-mid">
+          <section class="futari-dashboard-todo futari-dashboard-card">
+            <div class="futari-dashboard-section-head">
+              <h2>&#12420;&#12426;&#12383;&#12356;&#12371;&#12392;</h2>
+              <button type="button" data-open-todo-list aria-label="todo list">${getIcon('chevronRight')}</button>
+            </div>
+            <div class="futari-dashboard-todo__list">
+              ${renderTodoRows(todos)}
+            </div>
+            <button class="futari-dashboard-add" type="button" data-profile-open-todo-list>
+              <span>+</span>
+              &#36861;&#21152;&#12377;&#12427;
+            </button>
+          </section>
+          ${renderProfileBook(state.profile || {})}
         </section>
 
         <section class="futari-dashboard-plus futari-dashboard-card">
