@@ -702,13 +702,9 @@
 .couple-calendar-page--profile-book .couple-screen {
   width: min(100%, 900px);
   padding:
-    max(8px, calc(env(safe-area-inset-top) + 6px))
+    max(18px, calc(env(safe-area-inset-top) + 14px))
     6px
     calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 24px);
-}
-
-.couple-calendar-page--profile-book .couple-brand {
-  display: none;
 }
 
 .couple-calendar-page--profile-book .couple-page-title {

@@ -1710,10 +1710,7 @@
 }
 
 .couple-brand__line {
-  position: relative;
-  width: 70px;
-  height: 38px;
-  color: #ae8569;
+  display: none;
 }
 
 .couple-brand__line span {

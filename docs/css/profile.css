@@ -263,7 +263,7 @@
   min-height: 100%;
   margin: 0 auto;
   padding:
-    max(22px, calc(env(safe-area-inset-top) + 16px))
+    max(18px, calc(env(safe-area-inset-top) + 14px))
     22px
     calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 22px);
 }
@@ -273,17 +273,7 @@
   display: grid;
   justify-items: center;
   gap: 8px;
-  padding-top: 4px;
   text-align: center;
-}
-
-.futari-dashboard-hero .couple-brand__word {
-  font-size: 40px;
-  letter-spacing: 0.2em;
-}
-
-.futari-dashboard-hero .couple-brand__line {
-  margin-top: 8px;
 }
 
 .futari-dashboard-hero h1 {
@@ -793,10 +783,6 @@
   .futari-dashboard-shell {
     gap: 16px;
     padding-inline: 18px;
-  }
-
-  .futari-dashboard-hero .couple-brand__word {
-    font-size: 34px;
   }
 
   .futari-dashboard-top,
