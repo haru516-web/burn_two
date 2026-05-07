@@ -30,9 +30,9 @@ export function renderBottomNav(screen) {
         <span class="timeline-bottom-nav__icon" aria-hidden="true">${getIcon('issue')}</span>
         <span class="timeline-bottom-nav__label">雑誌</span>
       </button>
-      <button class="timeline-bottom-nav__item ${isProfileActive ? 'is-active' : ''}" type="button" data-home-nav="profile" aria-label="ふたり">
+      <button class="timeline-bottom-nav__item ${isProfileActive ? 'is-active' : ''}" type="button" data-home-nav="profile" aria-label="プロフィール">
         <span class="timeline-bottom-nav__icon" aria-hidden="true">${getIcon('profile')}</span>
-        <span class="timeline-bottom-nav__label">ふたり</span>
+        <span class="timeline-bottom-nav__label">プロフィール</span>
       </button>
     </nav>
   `;

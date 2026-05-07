@@ -153,8 +153,8 @@ function renderRecordCamera(draft) {
   const zoomPercent = ((activeZoom - 1) / 4) * 100;
   const filters = [
     { id: 'none', label: 'フィルターなし' },
-    { id: 'canon-ixy', label: 'Canon IXY' },
-    { id: 'nikon-d200', label: 'Nikon D200' },
+    { id: 'canon-ixy', label: 'heisei' },
+    { id: 'nikon-d200', label: '2000' },
   ];
   return `
     <section class="record-page record-page--camera">

@@ -23,7 +23,11 @@ function renderPostDetailCard(post, options = {}) {
             <p class="post-card__author">${post.authorName}</p>
           </div>
         </div>
-        ${(showOwnerMenu && canDelete) ? `
+        ${canDelete ? `
+          <button class="post-detail-card__delete-button" type="button" data-delete-post="${post.id}" aria-label="Delete post">
+            ${getIcon('trash')}
+          </button>
+        ` : (showOwnerMenu && canDelete) ? `
           <button class="post-detail-card__menu-button" type="button" data-post-owner-menu aria-label="Post options">
             ${getIcon('more')}
           </button>
@@ -57,14 +61,6 @@ function renderPostDetailCard(post, options = {}) {
         ` : ''}
       </div>
 
-      ${canDelete ? `
-        <div class="post-detail-card__owner-actions" data-post-owner-actions hidden>
-          <button class="post-detail-card__owner-button post-detail-card__owner-button--danger" type="button" data-delete-post="${post.id}">
-            ${getIcon('trash')}
-            <span>Delete</span>
-          </button>
-        </div>
-      ` : ''}
     </article>
   `;
 }

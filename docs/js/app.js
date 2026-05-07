@@ -75,7 +75,9 @@ const uiState = {
   homeCoreState: 'default',
   homeCoreTapTimestamps: [],
   previewPostId: null,
+  openingMemoryPostId: null,
   commentPostId: null,
+  plusPlanOpen: false,
   profileEditOpen: false,
   profileAuthor: null,
   profileSection: null,
@@ -613,6 +615,18 @@ function getActivePost(postId) {
   return getState().posts.find((post) => post.id === postId);
 }
 
+function getRandomOpeningMemoryPost() {
+  const posts = (getState().posts || []).filter((post) => post?.imageData);
+  if (!posts.length) return null;
+  return posts[Math.floor(Math.random() * posts.length)];
+}
+
+function formatOpeningMemoryDateLabel(post) {
+  const dateKey = post?.composeData?.recordDate || String(post?.createdAt || '').slice(0, 10);
+  const { month, day } = parseDateKey(dateKey || getTodayDateKey());
+  return `${month}月${day}日の思い出`;
+}
+
 function isOwnPost(post) {
   if (!post) return false;
   return post.authorName === getState().profile.name;
@@ -727,9 +741,77 @@ function renderModals() {
   const commentPost = uiState.commentPostId ? getActivePost(uiState.commentPostId) : null;
   modalRoot.innerHTML = `
     ${renderCommentsModal(commentPost)}
+    ${renderOpeningMemoryOverlay()}
+    ${renderPlusPlanModal()}
     ${renderRecordPostingOverlay()}
   `;
   bindModalEvents();
+}
+
+function renderPlusPlanModal() {
+  if (!uiState.plusPlanOpen) return '';
+  const benefits = [
+    '元素材7日保存',
+    '7日前まで遡ってページ作成可能',
+    '1日30ページ作成可能',
+    'プレミアムテンプレート解放',
+    'プレミアムフィルター解放',
+  ];
+  return `
+    <div class="plus-plan-modal" role="dialog" aria-modal="true" aria-label="BURN Plus">
+      <div class="plus-plan-modal__backdrop" data-close-plus-plan></div>
+      <section class="plus-plan-modal__panel">
+        <button class="plus-plan-modal__close" type="button" data-close-plus-plan aria-label="Close">
+          ${getIcon('close')}
+        </button>
+        <div class="plus-plan-modal__head">
+          <p>Premium Plan</p>
+          <h2>BURN Plus <span>&#10022;</span></h2>
+          <small>思い出を、少し長く、少し自由に残せます。</small>
+        </div>
+        <div class="plus-plan-modal__list">
+          ${benefits.map((benefit) => `
+            <div class="plus-plan-modal__item">
+              <span aria-hidden="true">&#10022;</span>
+              <p>${escapeHtml(benefit)}</p>
+            </div>
+          `).join('')}
+        </div>
+        <div class="plus-plan-modal__plans" aria-label="Plus plans">
+          <button class="plus-plan-modal__join" type="button">
+            <span>月額プラン</span>
+            <strong>&yen;480/月</strong>
+          </button>
+          <button class="plus-plan-modal__join plus-plan-modal__join--year" type="button">
+            <span>年額プラン</span>
+            <strong>&yen;3,800/年</strong>
+          </button>
+        </div>
+      </section>
+    </div>
+  `;
+}
+
+function renderOpeningMemoryOverlay() {
+  const post = uiState.openingMemoryPostId ? getActivePost(uiState.openingMemoryPostId) : null;
+  if (!post?.imageData) return '';
+  const title = escapeHtml(String(post.composeData?.headline || post.caption || 'memory page').trim());
+  const dateLabel = escapeHtml(formatOpeningMemoryDateLabel(post));
+  return `
+    <div class="opening-memory-overlay" role="dialog" aria-modal="true" aria-label="memory page">
+      <div class="opening-memory-overlay__frame">
+        <div class="opening-memory-overlay__bar">
+          <p class="opening-memory-overlay__date">${dateLabel}</p>
+          <button class="opening-memory-overlay__close" type="button" data-close-opening-memory aria-label="Close">
+            ${getIcon('close')}
+          </button>
+        </div>
+        <div class="opening-memory-overlay__page">
+          <img src="${post.imageData}" alt="${title}" />
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function renderRecordPostingOverlay() {
@@ -899,7 +981,9 @@ function navigate(screen) {
 }
 
 function enterTimelineFromOpening() {
+  const openingMemoryPost = getRandomOpeningMemoryPost();
   uiState.previewPostId = null;
+  uiState.openingMemoryPostId = openingMemoryPost?.id || null;
   uiState.commentPostId = null;
   uiState.openingTapGuardUntil = Date.now() + 700;
   uiState.postReturnScreen = 'home';
@@ -938,6 +1022,7 @@ function openPostDetail(postId) {
   uiState.postReturnProfileAuthor = uiState.profileAuthor;
   uiState.screen = 'post';
   uiState.previewPostId = postId;
+  uiState.openingMemoryPostId = null;
   uiState.commentPostId = null;
   uiState.postDetailShouldScroll = true;
   render();
@@ -2431,6 +2516,13 @@ function bindSearchEvents() {
       button.disabled = false;
       button.textContent = previousText || '端末に保存';
       if (!saved) return;
+    });
+  });
+
+  document.querySelectorAll('[data-open-plus-plan]').forEach((button) => {
+    button.addEventListener('click', () => {
+      uiState.plusPlanOpen = true;
+      renderModals();
     });
   });
 }
@@ -8504,6 +8596,13 @@ function bindProfileEvents() {
     });
   });
 
+  document.querySelectorAll('[data-open-plus-plan]').forEach((button) => {
+    button.addEventListener('click', () => {
+      uiState.plusPlanOpen = true;
+      renderModals();
+    });
+  });
+
   document.querySelectorAll('[data-profile-book-close]').forEach((button) => {
     button.addEventListener('click', () => {
       uiState.profileSection = null;
@@ -8735,6 +8834,22 @@ function bindPostDetailEvents() {
       closePostDetail();
     });
   });
+
+  document.querySelectorAll('[data-delete-post]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const postId = button.dataset.deletePost;
+      if (!postId) return;
+      const post = getActivePost(postId);
+      if (!isOwnPost(post)) return;
+      if (!window.confirm('このページを削除しますか？')) return;
+
+      deletePost(postId);
+      if (uiState.previewPostId === postId) {
+        uiState.previewPostId = null;
+      }
+      closePostDetail();
+    });
+  });
 }
 
 function bindAuthEvents() {
@@ -8819,6 +8934,21 @@ function bindModalEvents() {
   document.querySelectorAll('[data-close-comments]').forEach((element) => {
     element.addEventListener('click', () => {
       uiState.commentPostId = null;
+      renderModals();
+    });
+  });
+
+  document.querySelectorAll('[data-close-opening-memory]').forEach((button) => {
+    button.addEventListener('click', () => {
+      uiState.openingMemoryPostId = null;
+      uiState.screen = 'home';
+      render();
+    });
+  });
+
+  document.querySelectorAll('[data-close-plus-plan]').forEach((button) => {
+    button.addEventListener('click', () => {
+      uiState.plusPlanOpen = false;
       renderModals();
     });
   });
