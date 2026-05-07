@@ -42,7 +42,7 @@ function renderTodoRows(todos) {
   const visibleTodos = todos
     .slice()
     .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
-    .slice(0, 2);
+    .slice(0, 3);
   if (!visibleTodos.length) {
     return '<p class="futari-dashboard-todo__empty">&#12420;&#12426;&#12383;&#12356;&#12371;&#12392;&#12434;&#36861;&#21152;&#12375;&#12390;&#12367;&#12384;&#12373;&#12356;</p>';
   }

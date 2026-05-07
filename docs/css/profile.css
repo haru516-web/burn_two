@@ -494,28 +494,34 @@
   border-radius: 18px;
 }
 
+.futari-dashboard-todo {
+  grid-template-rows: auto minmax(88px, 1fr) auto;
+  align-content: stretch;
+}
+
 .futari-dashboard-section-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 10px;
 }
 
 .futari-dashboard-section-head h2 {
   min-width: 0;
   color: #332722;
   font-family: "Zen Old Mincho", "Noto Serif JP", serif;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1.25;
+  letter-spacing: 0.08em;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .futari-dashboard-section-head button {
-  width: 42px;
-  height: 42px;
+  width: 30px;
+  height: 30px;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -524,22 +530,26 @@
 }
 
 .futari-dashboard-section-head svg {
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
 }
 
 .futari-dashboard-todo__list {
   display: grid;
-  gap: 8px;
+  gap: 9px;
+  align-content: center;
+  justify-items: center;
+  padding: 6px 0;
 }
 
 .futari-dashboard-todo__row {
   display: grid;
-  grid-template-columns: 26px minmax(0, 1fr);
+  grid-template-columns: 22px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
-  min-height: 38px;
-  padding: 0 12px;
+  width: min(100%, 150px);
+  min-height: 36px;
+  padding: 0 11px;
   border: 1px solid rgba(226, 211, 199, 0.9);
   border-radius: 999px;
   color: #4b3b34;
@@ -550,6 +560,7 @@
 .futari-dashboard-todo__check {
   display: grid;
   place-items: center;
+  justify-self: center;
   width: 18px;
   height: 18px;
   border: 1px solid rgba(198, 161, 146, 0.86);
@@ -565,7 +576,7 @@
 .futari-dashboard-todo__title {
   overflow: hidden;
   font-family: "Zen Old Mincho", "Noto Serif JP", serif;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -593,6 +604,8 @@
 }
 
 .futari-dashboard-add {
+  justify-self: center;
+  width: min(100%, 150px);
   min-height: 42px;
   border: 1px dashed rgba(210, 188, 176, 0.9);
   border-radius: 999px;
