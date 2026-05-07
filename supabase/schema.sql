@@ -148,6 +148,33 @@ create table if not exists public.space_invites (
   created_at timestamptz not null default now()
 );
 
+alter table public.space_invites
+  add column if not exists space_id uuid references public.memory_spaces(id) on delete cascade,
+  add column if not exists inviter_id uuid references public.profiles(id) on delete cascade,
+  add column if not exists invitee_email text,
+  add column if not exists token text,
+  add column if not exists accepted_by uuid references public.profiles(id) on delete set null,
+  add column if not exists accepted_at timestamptz,
+  add column if not exists expires_at timestamptz,
+  add column if not exists created_at timestamptz not null default now();
+
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'space_invites'
+      and column_name = 'invited_by'
+  ) then
+    update public.space_invites
+    set inviter_id = invited_by
+    where inviter_id is null
+      and invited_by is not null;
+  end if;
+end;
+$$;
+
 create table if not exists public.invite_links (
   id uuid primary key default gen_random_uuid(),
   couple_id uuid not null references public.memory_spaces(id) on delete cascade,
