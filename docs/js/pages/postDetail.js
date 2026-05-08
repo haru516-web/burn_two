@@ -10,23 +10,35 @@ function renderPostDetailCard(post, options = {}) {
     showActions = true,
     showOwnerMenu = false,
   } = options;
-  const tags = [...(post.fixedTags || []), ...(post.freeTags || [])];
+  const isCompletedPage = String(post.id || '').startsWith('completed_') || Boolean(post.composeData?.completedPageId);
+  const tags = isCompletedPage ? [] : [...(post.fixedTags || []), ...(post.freeTags || [])];
+  const activeStorageScope = post.storageScope === 'personal' ? 'personal' : 'shared';
 
   return `
     <article class="post-detail-card" data-post-detail-card ${isActive ? 'data-post-detail-active' : ''}>
       <div class="post-detail-card__author-row">
         <div class="post-detail-card__author-main">
-          <button class="avatar avatar-button" type="button" data-open-author="${post.authorName}" aria-label="Open ${post.authorName} profile">
-            ${renderAvatarContent(post.authorAvatarData, post.authorIcon, `${post.authorName} avatar`)}
-          </button>
+          ${isCompletedPage ? '' : `
+            <button class="avatar avatar-button" type="button" data-open-author="${post.authorName}" aria-label="Open ${post.authorName} profile">
+              ${renderAvatarContent(post.authorAvatarData, post.authorIcon, `${post.authorName} avatar`)}
+            </button>
+          `}
           <div>
             <p class="post-card__author">${post.authorName}</p>
           </div>
         </div>
         ${canDelete ? `
-          <button class="post-detail-card__delete-button" type="button" data-delete-post="${post.id}" aria-label="Delete post">
-            ${getIcon('trash')}
-          </button>
+          <div class="post-detail-card__owner-controls">
+            ${isCompletedPage ? `
+              <div class="post-detail-card__scope-switch" role="tablist" aria-label="表示先">
+                <button class="${activeStorageScope === 'shared' ? 'is-active' : ''}" type="button" data-post-detail-move-scope="${post.id}" data-post-detail-move-target="shared" role="tab" aria-selected="${activeStorageScope === 'shared'}" ${activeStorageScope === 'shared' ? 'disabled' : ''}>共有</button>
+                <button class="${activeStorageScope === 'personal' ? 'is-active' : ''}" type="button" data-post-detail-move-scope="${post.id}" data-post-detail-move-target="personal" role="tab" aria-selected="${activeStorageScope === 'personal'}" ${activeStorageScope === 'personal' ? 'disabled' : ''}>個人</button>
+              </div>
+            ` : ''}
+            <button class="post-detail-card__delete-button" type="button" data-delete-post="${post.id}" aria-label="Delete post">
+              ${getIcon('trash')}
+            </button>
+          </div>
         ` : (showOwnerMenu && canDelete) ? `
           <button class="post-detail-card__menu-button" type="button" data-post-owner-menu aria-label="Post options">
             ${getIcon('more')}
@@ -36,7 +48,7 @@ function renderPostDetailCard(post, options = {}) {
 
       <img class="post-detail-card__image" src="${post.imageData}" alt="${post.authorName} post image" />
 
-      ${showActions ? `
+      ${showActions && !isCompletedPage ? `
         <div class="post-detail-card__action-row">
           <div class="post-detail-card__primary-actions">
             <button class="post-detail-card__icon ${post.liked ? 'is-active' : ''}" type="button" data-like="${post.id}" aria-label="Like post">
@@ -88,6 +100,7 @@ export function renderPostDetail(post, options = {}) {
   const {
     posts = [post],
     currentUserName = '',
+    currentUserId = '',
     title = post.authorName,
     showActions = true,
     showOwnerMenu = false,
@@ -106,7 +119,9 @@ export function renderPostDetail(post, options = {}) {
 
       <div class="post-detail-feed">
         ${feedPosts.map((feedPost) => {
-          const ownsPost = feedPost.authorName === currentUserName;
+          const ownsPost = feedPost.authorId && currentUserId
+            ? feedPost.authorId === currentUserId
+            : feedPost.authorName === currentUserName;
           return renderPostDetailCard(feedPost, {
             canDelete: ownsPost,
             canEdit: ownsPost,

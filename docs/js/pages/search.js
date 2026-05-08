@@ -501,9 +501,12 @@ function renderDateList(state, uiState = {}) {
   `;
 }
 
-function renderPageListEntry(post) {
+function renderPageListEntry(post, activePageScope = 'shared') {
   const title = getPostTitle(post);
   const dateText = getPostDateKey(post).replace(/-/g, '.');
+  const isCompleted = String(post.id || '').startsWith('completed_');
+  const moveTarget = activePageScope === 'personal' ? 'shared' : 'personal';
+  const moveLabel = moveTarget === 'personal' ? '個人に表示' : '共有に表示';
   return `
     <article class="couple-album-page">
       <button class="couple-album-page__image" type="button" data-open-preview="${post.id}" aria-label="${title}を開く">
@@ -515,6 +518,7 @@ function renderPageListEntry(post) {
         <p>${String(post.caption || '作成済みページ').split('/').slice(1).join(' / ') || 'ふたりの記録ページ'}</p>
         <div class="couple-list-actions">
           <button type="button" data-open-preview="${post.id}">ページを見る ${getIcon('chevronRight')}</button>
+          ${isCompleted ? `<button type="button" data-move-page-scope="${post.id}" data-move-page-target="${moveTarget}">${moveLabel}</button>` : ''}
           <button class="is-danger" type="button" data-delete-page-entry="${post.id}">削除</button>
         </div>
       </div>
@@ -587,7 +591,7 @@ function renderPageList(state, uiState = {}) {
     ` : ''}
     <section class="couple-date-list-page couple-album-grid">
       ${items.length
-        ? (activeAlbumTab === 'photo' ? photos.map(renderPhotoListEntry).join('') : posts.map(renderPageListEntry).join(''))
+        ? (activeAlbumTab === 'photo' ? photos.map(renderPhotoListEntry).join('') : posts.map((post) => renderPageListEntry(post, activePageScope)).join(''))
         : `
           <section class="couple-card couple-date-detail">
             <p class="couple-kicker">pages</p>

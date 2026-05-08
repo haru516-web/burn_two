@@ -33,7 +33,9 @@ create table if not exists public.completed_pages (
   id uuid primary key default gen_random_uuid(),
   page_id text,
   space_id uuid not null references public.memory_spaces(id) on delete cascade,
+  display_space_id uuid references public.memory_spaces(id) on delete set null,
   author_id uuid not null references public.profiles(id) on delete cascade,
+  display_scope text not null default 'couple' check (display_scope in ('personal', 'couple')),
   title text not null default 'Untitled',
   final_image_path text,
   is_locked boolean not null default true,
@@ -49,7 +51,10 @@ create table if not exists public.completed_pages (
 alter table public.completed_pages
   add column if not exists page_id text,
   add column if not exists space_id uuid references public.memory_spaces(id) on delete cascade,
+  add column if not exists display_space_id uuid references public.memory_spaces(id) on delete set null,
   add column if not exists author_id uuid references public.profiles(id) on delete set null,
+  add column if not exists save_scope text not null default 'couple' check (save_scope in ('personal', 'couple')),
+  add column if not exists display_scope text not null default 'couple' check (display_scope in ('personal', 'couple')),
   add column if not exists title text not null default 'Untitled',
   add column if not exists final_image_path text,
   add column if not exists is_locked boolean not null default true,
@@ -60,6 +65,53 @@ alter table public.completed_pages
   add column if not exists completed_at timestamptz not null default now(),
   add column if not exists created_at timestamptz not null default now(),
   add column if not exists updated_at timestamptz not null default now();
+
+update public.completed_pages
+set save_scope = 'couple'
+where save_scope is null;
+
+update public.completed_pages
+set display_scope = coalesce(display_scope, save_scope, 'couple')
+where display_scope is null;
+
+update public.completed_pages
+set display_space_id = space_id
+where display_scope = 'couple'
+  and display_space_id is null;
+
+alter table public.completed_pages
+  alter column save_scope set default 'couple',
+  alter column save_scope set not null;
+
+alter table public.completed_pages
+  alter column display_scope set default 'couple',
+  alter column display_scope set not null;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'completed_pages_save_scope_check'
+  ) then
+    alter table public.completed_pages
+      add constraint completed_pages_save_scope_check
+      check (save_scope in ('personal', 'couple'));
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'completed_pages_display_scope_check'
+  ) then
+    alter table public.completed_pages
+      add constraint completed_pages_display_scope_check
+      check (display_scope in ('personal', 'couple'));
+  end if;
+end $$;
 
 create table if not exists public.photo_assets (
   id uuid primary key default gen_random_uuid(),
@@ -278,7 +330,7 @@ using (
   author_id = auth.uid()
   or exists (
     select 1 from public.space_members sm
-    where sm.space_id = completed_pages.space_id
+    where sm.space_id = completed_pages.display_space_id
       and sm.user_id = auth.uid()
   )
 );
@@ -289,10 +341,16 @@ on public.completed_pages for insert
 to authenticated
 with check (
   author_id = auth.uid()
+  and exists (
+    select 1 from public.space_members sm
+    where sm.space_id = completed_pages.space_id
+      and sm.user_id = auth.uid()
+  )
   and (
-    exists (
+    completed_pages.display_space_id is null
+    or exists (
       select 1 from public.space_members sm
-      where sm.space_id = completed_pages.space_id
+      where sm.space_id = completed_pages.display_space_id
         and sm.user_id = auth.uid()
     )
   )
@@ -303,7 +361,17 @@ create policy "completed_pages_update_author"
 on public.completed_pages for update
 to authenticated
 using (author_id = auth.uid())
-with check (author_id = auth.uid());
+with check (
+  author_id = auth.uid()
+  and (
+    completed_pages.display_space_id is null
+    or exists (
+      select 1 from public.space_members sm
+      where sm.space_id = completed_pages.display_space_id
+        and sm.user_id = auth.uid()
+    )
+  )
+);
 
 drop policy if exists "photo_assets_select_owner_or_member" on public.photo_assets;
 create policy "photo_assets_select_owner_or_member"
@@ -665,10 +733,29 @@ on storage.objects for select
 to authenticated
 using (
   bucket_id = 'completed-pages'
-  and exists (
-    select 1 from public.space_members sm
-    where sm.space_id::text = (storage.foldername(name))[1]
-      and sm.user_id = auth.uid()
+  and (
+    exists (
+      select 1 from public.space_members sm
+      where sm.space_id::text = (storage.foldername(name))[1]
+        and sm.user_id = auth.uid()
+    )
+    or exists (
+      select 1
+      from public.completed_pages cp
+      where (
+          cp.final_image_path = storage.objects.name
+          or cp.final_base_image_path = storage.objects.name
+          or cp.final_preview_image_path = storage.objects.name
+        )
+        and (
+          cp.author_id = auth.uid()
+          or exists (
+            select 1 from public.space_members sm
+            where sm.space_id = cp.display_space_id
+              and sm.user_id = auth.uid()
+          )
+        )
+    )
   )
 );
 

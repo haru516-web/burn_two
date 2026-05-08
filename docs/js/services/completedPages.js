@@ -206,10 +206,14 @@ export async function saveCompletedPage({
   storageScope = 'shared',
 }) {
   const client = requireSupabase();
-  const resolvedScope = storageScope === 'personal' ? 'personal' : 'shared';
-  const { user, memorySpaceId } = await ensureProfileAndMemorySpace({ scope: resolvedScope });
+  const displayScope = storageScope === 'personal' ? 'personal' : 'shared';
+  const displaySaveScope = displayScope === 'personal' ? 'personal' : 'couple';
+  const { user, memorySpaceId: storageSpaceId } = await ensureProfileAndMemorySpace({ scope: 'personal' });
+  const displaySpaceId = displayScope === 'shared'
+    ? (await ensureProfileAndMemorySpace({ scope: 'shared' })).memorySpaceId
+    : null;
   const completedPageId = crypto.randomUUID();
-  const finalImagePath = `${memorySpaceId}/${completedPageId}/final.webp`;
+  const finalImagePath = `${storageSpaceId}/${completedPageId}/final.webp`;
   const finalImageBlob = dataUrlToBlob(finalImageData || editorSnapshot?.imageData || '');
   if (!finalImageBlob.size) throw new Error('完成ページ画像がありません。');
   const now = new Date().toISOString();
@@ -227,17 +231,22 @@ export async function saveCompletedPage({
     .insert({
       id: completedPageId,
       page_id: pageId || null,
-      space_id: memorySpaceId,
+      space_id: storageSpaceId,
+      display_space_id: displaySpaceId,
       author_id: user.id,
       title: title || 'Untitled',
       final_image_path: finalImagePath,
+      save_scope: displaySaveScope,
+      display_scope: displaySaveScope,
       is_locked: true,
       editor_snapshot_json: {
         ...(editorSnapshot || {}),
         imageData: '',
         finalImagePath,
         isLocked: true,
-        storageScope: resolvedScope,
+        storageScope: displayScope,
+        saveScope: displaySaveScope,
+        displayScope: displaySaveScope,
       },
       updated_at: now,
     })
@@ -247,19 +256,28 @@ export async function saveCompletedPage({
   if (error) throw error;
   return {
     ...data,
-    storageScope: resolvedScope,
+    storageScope: displayScope,
   };
 }
 
 export async function listCompletedPages({ storageScope = 'shared' } = {}) {
   const client = requireSupabase();
   const resolvedScope = storageScope === 'personal' ? 'personal' : 'shared';
-  const { memorySpaceId } = await ensureProfileAndMemorySpace({ scope: resolvedScope });
-  const { data, error } = await client
+  const { user, memorySpaceId } = await ensureProfileAndMemorySpace({ scope: resolvedScope });
+  let query = client
     .from('completed_pages')
     .select('*')
-    .eq('space_id', memorySpaceId)
     .order('created_at', { ascending: false });
+  if (resolvedScope === 'personal') {
+    query = query
+      .eq('author_id', user.id)
+      .eq('display_scope', 'personal');
+  } else {
+    query = query
+      .eq('display_space_id', memorySpaceId)
+      .eq('display_scope', 'couple');
+  }
+  const { data, error } = await query;
 
   if (error) throw error;
   return Promise.all((data || []).map(async (page) => ({
@@ -269,14 +287,67 @@ export async function listCompletedPages({ storageScope = 'shared' } = {}) {
   })));
 }
 
+export async function moveCompletedPageStorageScope(pageId, nextStorageScope = 'shared') {
+  const normalizedPageId = String(pageId || '').replace(/^completed_/, '');
+  if (!normalizedPageId) throw new Error('Page id is missing.');
+
+  const client = requireSupabase();
+  const targetScope = nextStorageScope === 'personal' ? 'personal' : 'shared';
+  const targetDisplayScope = targetScope === 'personal' ? 'personal' : 'couple';
+  const { user } = await ensureProfileAndMemorySpace({ scope: 'personal' });
+  const targetDisplaySpaceId = targetScope === 'shared'
+    ? (await ensureProfileAndMemorySpace({ scope: 'shared' })).memorySpaceId
+    : null;
+  const { data: page, error: readError } = await client
+    .from('completed_pages')
+    .select('*')
+    .eq('id', normalizedPageId)
+    .eq('author_id', user.id)
+    .single();
+  if (readError) throw readError;
+
+  const snapshot = page.editor_snapshot_json && typeof page.editor_snapshot_json === 'object'
+    ? page.editor_snapshot_json
+    : {};
+  const nextSnapshot = {
+    ...snapshot,
+    storageScope: targetScope,
+    saveScope: targetDisplayScope,
+    displayScope: targetDisplayScope,
+  };
+
+  const { data, error } = await client
+    .from('completed_pages')
+    .update({
+      display_space_id: targetDisplaySpaceId,
+      save_scope: targetDisplayScope,
+      display_scope: targetDisplayScope,
+      editor_snapshot_json: nextSnapshot,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', normalizedPageId)
+    .eq('author_id', user.id)
+    .select('*')
+    .single();
+  if (error) throw error;
+
+  return {
+    ...data,
+    storageScope: targetScope,
+    finalImageUrl: await createCompletedPageUrl(client, data.final_image_path || data.final_base_image_path || data.final_preview_image_path),
+  };
+}
+
 export function completedPageToLocalPost(page, authorName = 'you') {
   const snapshot = page.editor_snapshot_json && typeof page.editor_snapshot_json === 'object'
     ? page.editor_snapshot_json
     : {};
+  const resolvedAuthorName = String(snapshot.authorName || authorName || 'you').trim() || 'you';
   return {
     id: `completed_${page.id}`,
-    authorName,
-    authorIcon: (authorName || 'U').trim().slice(0, 1).toUpperCase(),
+    authorId: page.author_id || '',
+    authorName: resolvedAuthorName,
+    authorIcon: (resolvedAuthorName || 'U').trim().slice(0, 1).toUpperCase(),
     caption: page.title || snapshot.headline || 'Untitled',
     imageData: page.finalImageUrl || snapshot.imageData || '',
     fixedTags: Array.isArray(snapshot.fixedTags) ? snapshot.fixedTags : ['completed'],
@@ -289,7 +360,8 @@ export function completedPageToLocalPost(page, authorName = 'you') {
     saved: false,
     createdAt: snapshot.createdAt || snapshot.composeData?.createdAt || page.completed_at || page.created_at || new Date().toISOString(),
     updatedAt: page.updated_at || null,
-    storageScope: page.storageScope || snapshot.storageScope || 'shared',
+    storageScope: page.storageScope || snapshot.storageScope || (page.display_scope === 'personal' ? 'personal' : 'shared'),
+    saveScope: page.display_scope || page.save_scope || snapshot.saveScope || (page.storageScope === 'personal' ? 'personal' : 'couple'),
     composeData: {
       ...(snapshot.composeData || snapshot),
       source: snapshot.source || snapshot.composeData?.source || 'completed_page',

@@ -52,6 +52,7 @@ import {
   completedPageToLocalPost,
   ensureProfileAndMemorySpace,
   listCompletedPages,
+  moveCompletedPageStorageScope,
   saveCompletedPage,
   setPersonalMemorySpaceId,
   setPreferredMemorySpaceId,
@@ -638,6 +639,7 @@ function getPageHtml() {
       return renderPostDetail(post, {
         posts,
         currentUserName: state.profile.name,
+        currentUserId: uiState.authUser?.id || '',
         title: uiState.postReturnScreen === 'profile' ? post?.authorName : '',
         showOwnerMenu: uiState.postReturnScreen === 'profile',
       });
@@ -665,6 +667,7 @@ function formatOpeningMemoryDateLabel(post) {
 
 function isOwnPost(post) {
   if (!post) return false;
+  if (post.authorId && uiState.authUser?.id) return post.authorId === uiState.authUser.id;
   return post.authorName === getState().profile.name;
 }
 
@@ -676,11 +679,13 @@ function buildCompletedEditorSnapshot({
   fixedTags = ['completed'],
   freeTags = [],
   createdAt = '',
+  authorName = '',
 }) {
   return {
     pageId: pageId || null,
     title: title || 'Untitled',
     imageData: imageData || '',
+    authorName: authorName || String(getState().profile?.name || 'you').trim() || 'you',
     fixedTags,
     freeTags,
     createdAt,
@@ -700,11 +705,16 @@ async function saveCompletedPageToSupabase(input) {
   });
 }
 
+function getCompletedPageAuthorName(page) {
+  const currentUserName = String(getState().profile?.name || 'you').trim() || 'you';
+  if (!page?.author_id || page.author_id === uiState.authUser?.id) return currentUserName;
+  return String(uiState.partnerProfile?.name || getState().couple?.partnerBName || 'Partner').trim() || 'Partner';
+}
+
 async function syncCompletedPagesFromSupabase(storageScope = uiState.albumPageScope || 'shared') {
   try {
     const pages = await listCompletedPages({ storageScope });
-    const authorName = String(getState().profile?.name || 'you').trim() || 'you';
-    replaceCompletedPostCache(pages.map((page) => completedPageToLocalPost(page, authorName)), storageScope);
+    replaceCompletedPostCache(pages.map((page) => completedPageToLocalPost(page, getCompletedPageAuthorName(page))), storageScope);
     return true;
   } catch (error) {
     console.warn('Failed to load completed pages from Supabase. Using local cache.', error);
@@ -2332,6 +2342,31 @@ function bindSearchEvents() {
       uiState.albumTab = 'pages';
       uiState.coupleView = 'pageList';
       await syncCompletedPagesFromSupabase(uiState.albumPageScope);
+      renderScreen();
+    });
+  });
+
+  document.querySelectorAll('[data-move-page-scope]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const pageId = button.dataset.movePageScope;
+      const targetScope = button.dataset.movePageTarget === 'personal' ? 'personal' : 'shared';
+      if (!pageId) return;
+      button.disabled = true;
+      try {
+        const movedPage = await moveCompletedPageStorageScope(pageId, targetScope);
+        upsertPostCache(completedPageToLocalPost(movedPage, getCompletedPageAuthorName(movedPage)));
+        await Promise.all([
+          syncCompletedPagesFromSupabase('shared'),
+          syncCompletedPagesFromSupabase('personal'),
+        ]);
+        uiState.albumPageScope = targetScope;
+      } catch (error) {
+        console.warn('Failed to move completed page scope.', error);
+        uiState.inviteLink = {
+          ...uiState.inviteLink,
+          error: error?.message || 'ページの保存先移動に失敗しました',
+        };
+      }
       renderScreen();
     });
   });
@@ -9253,6 +9288,32 @@ function bindPostDetailEvents() {
       closePostDetail();
     });
   });
+
+  document.querySelectorAll('[data-post-detail-move-scope]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const pageId = button.dataset.postDetailMoveScope;
+      const targetScope = button.dataset.postDetailMoveTarget === 'personal' ? 'personal' : 'shared';
+      if (!pageId || button.disabled) return;
+      button.disabled = true;
+      try {
+        const movedPage = await moveCompletedPageStorageScope(pageId, targetScope);
+        upsertPostCache(completedPageToLocalPost(movedPage, getCompletedPageAuthorName(movedPage)));
+        await Promise.all([
+          syncCompletedPagesFromSupabase('shared'),
+          syncCompletedPagesFromSupabase('personal'),
+        ]);
+        uiState.albumPageScope = targetScope;
+        uiState.previewPostId = `completed_${movedPage.id}`;
+      } catch (error) {
+        console.warn('Failed to move completed page scope from detail.', error);
+        uiState.inviteLink = {
+          ...uiState.inviteLink,
+          error: error?.message || 'ページの保存先移動に失敗しました',
+        };
+      }
+      renderScreen();
+    });
+  });
 }
 
 function bindAuthEvents() {
@@ -9474,10 +9535,10 @@ async function initializeAuth() {
       applyInviteRouteFromUrl();
     }
     if (data.session?.user) {
+      await syncPartnerProfileFromSupabase();
       await Promise.all([
         syncCompletedPagesFromSupabase(),
         syncPhotoAssetsFromSupabase(),
-        syncPartnerProfileFromSupabase(),
       ]);
     }
   } catch (error) {
@@ -9492,11 +9553,12 @@ async function initializeAuth() {
     }
     if (session?.user) {
       applyInviteRouteFromUrl();
-      Promise.all([
-        syncCompletedPagesFromSupabase(),
-        syncPhotoAssetsFromSupabase(),
-        syncPartnerProfileFromSupabase(),
-      ]).finally(() => render());
+      syncPartnerProfileFromSupabase()
+        .then(() => Promise.all([
+          syncCompletedPagesFromSupabase(),
+          syncPhotoAssetsFromSupabase(),
+        ]))
+        .finally(() => render());
       return;
     }
     render();

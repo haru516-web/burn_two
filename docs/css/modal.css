@@ -536,6 +536,38 @@
   height: 18px;
 }
 
+.post-detail-card__owner-controls {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.post-detail-card__scope-switch {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(42px, 1fr));
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid rgba(201, 143, 147, 0.28);
+  border-radius: 999px;
+  background: rgba(255, 253, 249, 0.82);
+}
+
+.post-detail-card__scope-switch button {
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  color: rgba(83, 70, 61, 0.68);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.post-detail-card__scope-switch button.is-active {
+  color: #ffffff;
+  background: rgba(201, 143, 147, 0.92);
+}
+
 .post-detail-card__image {
   width: 100%;
   display: block;

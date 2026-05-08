@@ -73,6 +73,7 @@ function normalizeComposeData(post) {
 function normalizePost(post) {
   return {
     id: post.id,
+    authorId: post.authorId || '',
     authorName: post.authorName || 'you',
     authorIcon: post.authorIcon || (post.authorName || 'U').trim().slice(0, 1).toUpperCase(),
     authorAvatarData: post.authorAvatarData || '',
@@ -89,6 +90,7 @@ function normalizePost(post) {
     createdAt: post.createdAt || new Date().toISOString(),
     updatedAt: post.updatedAt || null,
     storageScope: post.storageScope === 'personal' ? 'personal' : 'shared',
+    saveScope: post.saveScope === 'personal' ? 'personal' : 'couple',
     composeData: normalizeComposeData(post),
   };
 }
