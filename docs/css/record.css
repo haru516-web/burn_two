@@ -464,7 +464,7 @@
 
 .record-page--camera {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr);
   width: 100%;
   max-width: none;
   height: 100svh;
@@ -472,17 +472,34 @@
   min-height: 0;
   padding: 0;
   overflow: hidden;
-  background: #fffaf6;
+  background: #171514;
+}
+
+.record-page--camera.is-inputting {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(183, 104, 96, 0.08), transparent 36%),
+    #fffaf6;
 }
 
 .record-camera-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 8;
   display: grid;
   grid-template-columns: 48px 1fr 48px;
   align-items: center;
   min-height: calc(env(safe-area-inset-top) + 70px);
   padding: calc(env(safe-area-inset-top) + 10px) 20px 10px;
-  color: #231b18;
-  background: rgba(255, 250, 246, 0.94);
+  color: #fffaf6;
+  background: linear-gradient(180deg, rgba(23, 21, 20, 0.78), rgba(23, 21, 20, 0));
+  pointer-events: none;
+}
+
+.record-page--camera.is-inputting .record-camera-header {
+  color: #2c2320;
+  background: linear-gradient(180deg, rgba(255, 250, 246, 0.96), rgba(255, 250, 246, 0));
 }
 
 .record-camera-header button {
@@ -493,6 +510,7 @@
   border: 0;
   background: transparent;
   color: inherit;
+  pointer-events: auto;
 }
 
 .record-camera-header h1 {
@@ -514,13 +532,21 @@
 }
 
 .record-camera-stage {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   justify-self: center;
   align-self: center;
   width: 100%;
+  height: 100%;
   min-height: 0;
+  box-sizing: border-box;
+  padding: calc(env(safe-area-inset-top) + 78px) 0 calc(env(safe-area-inset-bottom) + 202px);
+}
+
+.record-camera-stage.is-inputting {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 348px);
 }
 
 .record-camera-stage--landscape {
@@ -531,7 +557,6 @@
 .record-camera-stage--portrait {
   flex-direction: row;
   gap: 10px;
-  padding: 0 10px;
 }
 
 .record-camera-preview {
@@ -553,8 +578,46 @@
   background: #efe7e0;
 }
 
+.record-camera-preview:not(.has-photo) {
+  width: min(100%, calc((100svh - 288px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) * 1.183));
+  max-height: 100%;
+  height: auto;
+  aspect-ratio: 1.183;
+  background: #171514;
+}
+
 .record-camera-preview.has-photo {
   --record-camera-available-height: calc(100svh - 482px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+}
+
+.record-camera-preview.has-photo.record-camera-preview--portrait {
+  width: min(100%, calc((100svh - 150px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) * 0.772));
+  aspect-ratio: 0.772;
+}
+
+.record-camera-preview.has-photo.record-camera-preview--landscape {
+  width: min(100%, calc((100svh - 172px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) * 1.183));
+  aspect-ratio: 1.183;
+}
+
+.record-camera-preview.has-photo.is-inputting {
+  box-shadow: 0 18px 36px rgba(77, 48, 39, 0.12);
+}
+
+.record-camera-preview.has-photo.is-inputting.record-camera-preview--portrait {
+  width: min(
+    72vw,
+    320px,
+    calc((100svh - 462px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) * 0.772)
+  );
+}
+
+.record-camera-preview.has-photo.is-inputting.record-camera-preview--landscape {
+  width: min(
+    calc(100% - 48px),
+    430px,
+    calc((100svh - 458px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) * 1.183)
+  );
 }
 
 .record-camera-preview--portrait {
@@ -562,6 +625,13 @@
   --record-camera-max-width: 340px;
   --record-camera-side-space: 126px;
   --record-camera-available-height: calc(100svh - 278px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+}
+
+.record-camera-preview:not(.has-photo).record-camera-preview--portrait {
+  width: min(100%, calc((100svh - 288px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) * 0.772));
+  max-height: 100%;
+  height: auto;
+  aspect-ratio: 0.772;
 }
 
 .record-camera-preview img {
@@ -575,6 +645,25 @@
   height: 100%;
   object-fit: cover;
   transform-origin: center;
+}
+
+.record-camera-crop-frame {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+  inset: 0;
+  width: auto;
+  aspect-ratio: auto;
+  translate: none;
+  border: 1.5px solid rgba(255, 250, 246, 0.88);
+  box-shadow: none;
+  pointer-events: none;
+}
+
+.record-camera-crop-frame--portrait {
+  width: auto;
+  aspect-ratio: auto;
 }
 
 .record-camera-placeholder {
@@ -642,8 +731,10 @@
 }
 
 .record-camera-zoom {
-  position: relative;
-  z-index: 1;
+  position: absolute;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom) + 118px);
+  z-index: 4;
   display: grid;
   gap: 6px;
   width: min(72%, 330px);
@@ -654,6 +745,7 @@
   box-shadow: 0 12px 28px rgba(35, 27, 24, 0.2);
   backdrop-filter: blur(14px);
   touch-action: none;
+  transform: translateX(-50%);
 }
 
 .record-camera-stage.has-photo .record-camera-zoom {
@@ -793,6 +885,42 @@
   text-align: center;
 }
 
+.record-camera-stage--portrait .record-camera-zoom {
+  width: min(72%, 330px);
+  min-height: 0;
+  padding: 8px 12px 9px;
+  grid-template-rows: none;
+}
+
+.record-camera-stage--portrait .record-camera-zoom__value {
+  min-width: 46px;
+  width: auto;
+  padding: 3px 10px;
+}
+
+.record-camera-stage--portrait .record-camera-zoom input {
+  position: static;
+  width: 100%;
+  transform: none;
+  translate: none;
+}
+
+.record-camera-stage--portrait .record-camera-zoom__ticks {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  min-height: 0;
+  padding: 0;
+}
+
+.record-camera-stage--portrait .record-camera-zoom__ticks span {
+  padding-left: 0;
+  text-align: center;
+}
+
+.record-camera-stage--portrait .record-camera-zoom__ticks span::before {
+  display: none;
+}
+
 .record-camera-preview:has(.record-camera-video[srcObject]) .record-camera-placeholder,
 .record-camera-preview.is-live .record-camera-placeholder {
   display: none;
@@ -843,17 +971,53 @@
 }
 
 .record-capture-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
   display: grid;
   gap: 14px;
   padding: 16px 24px calc(env(safe-area-inset-bottom) + 16px);
-  border-radius: 26px 26px 0 0;
-  background: rgba(255, 250, 246, 0.98);
-  box-shadow: 0 -18px 44px rgba(54, 37, 30, 0.12);
+  border-radius: 0;
+  background: linear-gradient(180deg, rgba(23, 21, 20, 0), rgba(23, 21, 20, 0.74) 20%, rgba(23, 21, 20, 0.86));
+  box-shadow: none;
+}
+
+.record-capture-sheet:not(.is-expanded) {
+  pointer-events: none;
+}
+
+.record-capture-sheet:not(.is-expanded) .record-filter-bar,
+.record-capture-sheet:not(.is-expanded) .record-camera-actions {
+  pointer-events: auto;
 }
 
 .record-capture-sheet.is-expanded {
   gap: 12px;
   padding-top: 14px;
+}
+
+.record-capture-sheet.is-inputting {
+  background:
+    linear-gradient(180deg, rgba(255, 250, 246, 0), rgba(255, 250, 246, 0.96) 18%, #fffaf6);
+  box-shadow: 0 -18px 42px rgba(77, 48, 39, 0.08);
+}
+
+.record-capture-sheet.is-reviewing {
+  padding-top: 38px;
+}
+
+.record-camera-review-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.record-camera-review-actions .record-primary-button,
+.record-camera-review-actions .record-secondary-button {
+  width: 100%;
 }
 
 .record-page--edit-memory {

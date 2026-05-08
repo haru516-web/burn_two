@@ -146,6 +146,7 @@ function renderRecordHome(memories, recordDate = '') {
 
 function renderRecordCamera(draft) {
   const hasPhoto = Boolean(draft?.imageData);
+  const isPhotoConfirmed = Boolean(draft?.reviewConfirmed);
   const activeFilter = draft?.filter || 'none';
   const activeFacingMode = draft?.facingMode === 'user' ? 'user' : 'environment';
   const activeFrame = draft?.frame === 'portrait' ? 'portrait' : 'landscape';
@@ -157,21 +158,22 @@ function renderRecordCamera(draft) {
     { id: 'nikon-d200', label: '2000' },
   ];
   return `
-    <section class="record-page record-page--camera">
+    <section class="record-page record-page--camera ${hasPhoto && isPhotoConfirmed ? 'is-inputting' : ''}">
       <header class="record-camera-header">
         <button type="button" data-record-back-home aria-label="閉じる">${getIcon('close')}</button>
         <h1>写真を記録</h1>
         <span>${getIcon('bolt')}</span>
       </header>
 
-      <div class="record-camera-stage record-camera-stage--${activeFrame} ${hasPhoto ? 'has-photo' : ''}">
-        <div class="record-camera-preview record-camera-preview--${activeFrame} ${hasPhoto ? 'has-photo' : ''}">
+      <div class="record-camera-stage record-camera-stage--${activeFrame} ${hasPhoto ? 'has-photo' : ''} ${hasPhoto && isPhotoConfirmed ? 'is-inputting' : ''}">
+        <div class="record-camera-preview record-camera-preview--${activeFrame} ${hasPhoto ? 'has-photo' : ''} ${hasPhoto && isPhotoConfirmed ? 'is-inputting' : ''}">
         ${hasPhoto
           ? `<img class="record-filter-${escapeHtml(activeFilter)}" src="${draft.imageData}" alt="" />`
           : `<button class="record-frame-switch" type="button" data-record-switch-frame aria-label="写真枠を切り替え">
                <span>${activeFrame === 'portrait' ? '縦' : '横'}</span>
              </button>
              <video class="record-camera-video record-filter-${escapeHtml(activeFilter)}" data-record-camera-video autoplay playsinline muted style="transform:scale(${activeZoom});"></video>
+             <div class="record-camera-crop-frame record-camera-crop-frame--${activeFrame}" data-record-camera-crop-frame aria-hidden="true"></div>
              <button class="record-camera-switch" type="button" data-record-switch-camera aria-label="カメラを切り替え">
                ${getIcon('refreshCw')}
                <span>${activeFacingMode === 'user' ? '内カメ' : '外カメ'}</span>
@@ -193,7 +195,13 @@ function renderRecordCamera(draft) {
         `}
       </div>
 
-      <section class="record-capture-sheet ${hasPhoto ? 'is-expanded' : ''}">
+      <section class="record-capture-sheet ${hasPhoto ? 'is-expanded' : ''} ${hasPhoto && !isPhotoConfirmed ? 'is-reviewing' : ''} ${hasPhoto && isPhotoConfirmed ? 'is-inputting' : ''}">
+        ${hasPhoto && !isPhotoConfirmed ? `
+          <div class="record-camera-review-actions">
+            <button class="record-secondary-button" type="button" data-record-retake-photo>取り直す</button>
+            <button class="record-primary-button" type="button" data-record-use-photo>このまま使用</button>
+          </div>
+        ` : `
         <div class="record-filter-bar" aria-label="フィルター">
           ${filters.map((filter) => `
             <button class="${activeFilter === filter.id ? 'is-selected' : ''}" type="button" data-record-filter="${filter.id}">
@@ -201,7 +209,7 @@ function renderRecordCamera(draft) {
             </button>
           `).join('')}
         </div>
-        ${hasPhoto ? `
+        ${hasPhoto && isPhotoConfirmed ? `
           <label class="record-field">
             <span>場所</span>
             <div class="record-input-wrap">${getIcon('pin')}<input type="text" data-record-place value="${escapeHtml(draft.place || '')}" placeholder="代官山" /></div>
@@ -219,8 +227,8 @@ function renderRecordCamera(draft) {
           <button class="record-secondary-button record-save-button" type="button" data-record-save ${hasPhoto ? '' : 'disabled'}>保存</button>
         </div>
         ${hasPhoto ? '<button class="record-photo-download" type="button" data-record-save-photo>写真だけ保存</button>' : ''}
+        `}
       </section>
-
       <input type="file" accept="image/*" capture="${activeFacingMode === 'user' ? 'user' : 'environment'}" data-record-camera-input hidden />
       <input type="file" accept="image/*" data-record-album-input hidden />
     </section>

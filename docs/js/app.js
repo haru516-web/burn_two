@@ -7541,12 +7541,18 @@ async function startRecordCameraStream() {
     return;
   }
   const facingMode = uiState.recordDraft?.facingMode === 'user' ? 'user' : 'environment';
+  const aspectRatio = getRecordCaptureAspectRatio(uiState.recordDraft?.frame);
   stopRecordCameraStream();
   try {
     let stream = null;
     try {
       stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: facingMode } },
+        video: {
+          facingMode: { ideal: facingMode },
+          aspectRatio: { ideal: aspectRatio },
+          width: { ideal: uiState.recordDraft?.frame === 'portrait' ? 1080 : 1440 },
+          height: { ideal: uiState.recordDraft?.frame === 'portrait' ? 1440 : 1218 },
+        },
         audio: false,
       });
     } catch (constraintError) {
@@ -7584,10 +7590,29 @@ function adjustRecordCameraPixel(r, g, b, options) {
   return [nr, ng, nb];
 }
 
-function drawRecordCameraSource(ctx, source, outputWidth, outputHeight, zoom = 1) {
+function drawRecordCameraSource(ctx, source, outputWidth, outputHeight, zoom = 1, captureViewport = null) {
   const sourceWidth = source.videoWidth || source.naturalWidth || source.width;
   const sourceHeight = source.videoHeight || source.naturalHeight || source.height;
   if (!sourceWidth || !sourceHeight) return false;
+  if (captureViewport) {
+    const viewportWidth = Math.max(1, Number(captureViewport.viewportWidth) || outputWidth);
+    const viewportHeight = Math.max(1, Number(captureViewport.viewportHeight) || outputHeight);
+    const frameLeft = Math.max(0, Number(captureViewport.left) || 0);
+    const frameTop = Math.max(0, Number(captureViewport.top) || 0);
+    const frameWidth = Math.max(1, Number(captureViewport.width) || outputWidth);
+    const frameHeight = Math.max(1, Number(captureViewport.height) || outputHeight);
+    const scale = Math.max(viewportWidth / sourceWidth, viewportHeight / sourceHeight) * zoom;
+    const renderedWidth = sourceWidth * scale;
+    const renderedHeight = sourceHeight * scale;
+    const renderedLeft = (viewportWidth - renderedWidth) / 2;
+    const renderedTop = (viewportHeight - renderedHeight) / 2;
+    const sx = Math.min(sourceWidth - 1, Math.max(0, ((frameLeft - renderedLeft) / renderedWidth) * sourceWidth));
+    const sy = Math.min(sourceHeight - 1, Math.max(0, ((frameTop - renderedTop) / renderedHeight) * sourceHeight));
+    const sw = Math.min(sourceWidth - sx, Math.max(1, (frameWidth / renderedWidth) * sourceWidth));
+    const sh = Math.min(sourceHeight - sy, Math.max(1, (frameHeight / renderedHeight) * sourceHeight));
+    ctx.drawImage(source, sx, sy, sw, sh, 0, 0, outputWidth, outputHeight);
+    return true;
+  }
   const scale = Math.max(outputWidth / sourceWidth, outputHeight / sourceHeight) * zoom;
   const drawWidth = sourceWidth * scale;
   const drawHeight = sourceHeight * scale;
@@ -7677,7 +7702,7 @@ function getRecordCaptureAspectRatio(frame = uiState.recordDraft?.frame) {
   return frame === 'portrait' ? 0.772 : 1.183;
 }
 
-function drawFilteredImageToCanvas(source, filterId = 'none', frame = uiState.recordDraft?.frame, cameraZoom = uiState.recordDraft?.zoom) {
+function drawFilteredImageToCanvas(source, filterId = 'none', frame = uiState.recordDraft?.frame, cameraZoom = uiState.recordDraft?.zoom, captureViewport = null) {
   const sourceWidth = source.videoWidth || source.naturalWidth || source.width;
   const sourceHeight = source.videoHeight || source.naturalHeight || source.height;
   if (!sourceWidth || !sourceHeight) return '';
@@ -7690,7 +7715,7 @@ function drawFilteredImageToCanvas(source, filterId = 'none', frame = uiState.re
   const ctx = canvas.getContext('2d');
   if (!ctx) return '';
   const zoom = Math.min(5, Math.max(1, Number(cameraZoom) || 1));
-  if (!drawRecordCameraSource(ctx, source, canvas.width, canvas.height, zoom)) return '';
+  if (!drawRecordCameraSource(ctx, source, canvas.width, canvas.height, zoom, captureViewport)) return '';
   applyRecordCameraPixelFilter(ctx, canvas.width, canvas.height, filterId);
   addRecordCameraSoftness(ctx, canvas.width, canvas.height, filterId);
   const quality = isIxy ? 0.74 : isD200 ? 0.88 : 0.92;
@@ -7710,6 +7735,7 @@ async function applyRecordAlbumFile(file) {
     imageData: filteredImageData || imageData,
     sourceType: 'album',
     filter: 'none',
+    reviewConfirmed: false,
     frame: uiState.recordDraft?.frame === 'portrait' ? 'portrait' : 'landscape',
     time: uiState.recordDraft?.time || now.toTimeString().slice(0, 5),
     place: uiState.recordDraft?.place || '',
@@ -7722,13 +7748,29 @@ async function applyRecordAlbumFile(file) {
 function captureRecordCameraPhoto() {
   const video = document.querySelector('[data-record-camera-video]');
   if (!video) return false;
-  const imageData = drawFilteredImageToCanvas(video, uiState.recordDraft?.filter || 'none');
+  const preview = video.closest('.record-camera-preview');
+  const frame = document.querySelector('[data-record-camera-crop-frame]');
+  let captureViewport = null;
+  if (preview && frame) {
+    const previewRect = preview.getBoundingClientRect();
+    const frameRect = frame.getBoundingClientRect();
+    captureViewport = {
+      viewportWidth: previewRect.width,
+      viewportHeight: previewRect.height,
+      left: frameRect.left - previewRect.left,
+      top: frameRect.top - previewRect.top,
+      width: frameRect.width,
+      height: frameRect.height,
+    };
+  }
+  const imageData = drawFilteredImageToCanvas(video, uiState.recordDraft?.filter || 'none', uiState.recordDraft?.frame, uiState.recordDraft?.zoom, captureViewport);
   if (!imageData) return false;
   uiState.recordDraft = {
     ...(uiState.recordDraft || {}),
     imageData,
     sourceType: 'camera',
     filter: 'none',
+    reviewConfirmed: false,
     frame: uiState.recordDraft?.frame === 'portrait' ? 'portrait' : 'landscape',
     time: new Date().toTimeString().slice(0, 5),
     place: uiState.recordDraft?.place || '',
@@ -8494,6 +8536,7 @@ function bindRecordEvents() {
         facingMode: 'environment',
         frame: 'landscape',
         zoom: 1,
+        reviewConfirmed: false,
       };
       renderScreen();
     });
@@ -8558,9 +8601,30 @@ function bindRecordEvents() {
     });
   });
 
+  document.querySelector('[data-record-retake-photo]')?.addEventListener('click', () => {
+    const draft = uiState.recordDraft || {};
+    uiState.recordDraft = {
+      ...draft,
+      imageData: '',
+      sourceType: '',
+      filter: 'none',
+      reviewConfirmed: false,
+      zoom: Math.min(5, Math.max(1, Number(draft.zoom) || 1)),
+    };
+    renderScreen();
+  });
+
+  document.querySelector('[data-record-use-photo]')?.addEventListener('click', () => {
+    uiState.recordDraft = {
+      ...(uiState.recordDraft || {}),
+      reviewConfirmed: true,
+    };
+    renderScreen();
+  });
+
   document.querySelector('[data-record-save]')?.addEventListener('click', async () => {
     const draft = uiState.recordDraft || {};
-    if (!draft.imageData) return;
+    if (!draft.imageData || !draft.reviewConfirmed) return;
     const memoryInput = {
       ...draft,
       place: document.querySelector('[data-record-place]')?.value || draft.place || '',
