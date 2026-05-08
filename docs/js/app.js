@@ -8849,9 +8849,11 @@ function bindProfileEvents() {
             message: '共有を解除しました',
             error: '',
           };
+          uiState.albumTab = 'pages';
+          uiState.albumPageScope = 'personal';
           await Promise.all([
             syncPhotoAssetsFromSupabase(),
-            syncCompletedPagesFromSupabase(),
+            syncCompletedPagesFromSupabase('personal'),
           ]);
           uiState.profileSection = 'settings';
           uiState.settingsConfirmStep = 1;

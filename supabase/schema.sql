@@ -673,6 +673,21 @@ begin
   from public.space_members sm
   where sm.space_id = target_space_id;
 
+  update public.completed_pages
+  set display_scope = 'personal',
+      save_scope = 'personal',
+      display_space_id = null,
+      editor_snapshot_json = coalesce(editor_snapshot_json, '{}'::jsonb)
+        || jsonb_build_object(
+          'storageScope', 'personal',
+          'saveScope', 'personal',
+          'displayScope', 'personal'
+        ),
+      updated_at = now()
+  where author_id = auth.uid()
+    and display_scope = 'couple'
+    and display_space_id = target_space_id;
+
   if member_count > 1 then
     delete from public.space_members
     where space_id = target_space_id
