@@ -896,6 +896,14 @@
   background: rgba(244, 235, 229, 0.92);
 }
 
+.futari-dashboard-invite__result button[type="submit"] {
+  width: auto;
+  min-width: 58px;
+  padding: 0 12px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
 .futari-dashboard-invite__result svg,
 .futari-dashboard-invite__result .feature-icon {
   width: 18px;

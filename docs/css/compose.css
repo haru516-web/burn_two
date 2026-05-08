@@ -86,6 +86,11 @@
   background: linear-gradient(180deg, rgba(248, 243, 237, 0.12), rgba(248, 243, 237, 0.94) 28%, rgba(248, 243, 237, 1));
 }
 
+.page--compose--tags .compose-flow-actions .couple-album-tabs {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
 .page--compose--tags .compose-draft-button,
 .page--compose--tags .compose-submit-button {
   position: static;

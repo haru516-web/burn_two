@@ -53,6 +53,7 @@ import {
   ensureProfileAndMemorySpace,
   listCompletedPages,
   saveCompletedPage,
+  setPersonalMemorySpaceId,
   setPreferredMemorySpaceId,
 } from './services/completedPages.js';
 import { listPhotoAssets, savePhotoAsset } from './services/photoAssets.js';
@@ -78,6 +79,9 @@ const uiState = {
   dateAddStep: 1,
   dateAddDraft: null,
   dateListTab: 'upcoming',
+  albumPageScope: 'shared',
+  composeSaveScope: 'shared',
+  recordSaveScope: 'shared',
   todoInputOpen: false,
   homeTheme: 'light',
   homeCoreState: 'default',
@@ -129,6 +133,8 @@ const uiState = {
     busy: false,
     url: '',
     code: '',
+    acceptCode: '',
+    acceptBusy: false,
     message: '',
     error: '',
   },
@@ -618,6 +624,7 @@ function getPageHtml() {
         selectedBackground: uiState.composeBackgroundColor,
         draft: uiState.composeWorkingDraft || getActivePost(uiState.composeEditingPostId)?.composeData || null,
         isEditing: Boolean(uiState.composeEditingPostId),
+        saveScope: uiState.composeSaveScope,
       });
     case 'magazine':
       return renderMagazine(state);
@@ -689,14 +696,15 @@ async function saveCompletedPageToSupabase(input) {
     title: input.title,
     editorSnapshot,
     finalImageData: input.imageData,
+    storageScope: input.storageScope || uiState.composeSaveScope || 'shared',
   });
 }
 
-async function syncCompletedPagesFromSupabase() {
+async function syncCompletedPagesFromSupabase(storageScope = uiState.albumPageScope || 'shared') {
   try {
-    const pages = await listCompletedPages();
+    const pages = await listCompletedPages({ storageScope });
     const authorName = String(getState().profile?.name || 'you').trim() || 'you';
-    replaceCompletedPostCache(pages.map((page) => completedPageToLocalPost(page, authorName)));
+    replaceCompletedPostCache(pages.map((page) => completedPageToLocalPost(page, authorName)), storageScope);
     return true;
   } catch (error) {
     console.warn('Failed to load completed pages from Supabase. Using local cache.', error);
@@ -1206,6 +1214,7 @@ async function publishComposeDraft(draftId) {
     fixedTags: draftSnapshot.fixedTags,
     freeTags: draftSnapshot.freeTags,
     standardFiles: draftSnapshot.standardFiles,
+    storageScope: uiState.composeSaveScope || 'shared',
   };
 
   try {
@@ -1216,6 +1225,7 @@ async function publishComposeDraft(draftId) {
       composeData,
       fixedTags: draftSnapshot.fixedTags,
       freeTags: draftSnapshot.freeTags,
+      storageScope: uiState.composeSaveScope || 'shared',
     });
     upsertPostCache(completedPageToLocalPost(completedPage, profileName));
   } catch (error) {
@@ -2316,6 +2326,16 @@ function bindSearchEvents() {
     });
   });
 
+  document.querySelectorAll('[data-album-page-scope]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      uiState.albumPageScope = button.dataset.albumPageScope === 'personal' ? 'personal' : 'shared';
+      uiState.albumTab = 'pages';
+      uiState.coupleView = 'pageList';
+      await syncCompletedPagesFromSupabase(uiState.albumPageScope);
+      renderScreen();
+    });
+  });
+
   document.querySelectorAll('[data-date-list-tab]').forEach((button) => {
     button.addEventListener('click', () => {
       uiState.dateListTab = button.dataset.dateListTab === 'past' ? 'past' : 'upcoming';
@@ -2590,10 +2610,12 @@ function bindSearchEvents() {
 }
 function bindScreenNavigationEvents() {
   document.querySelectorAll('[data-home-nav]').forEach((button) => {
-    button.addEventListener('click', () => {
+    button.addEventListener('click', async () => {
       if (button.hasAttribute('data-bottom-album')) {
         uiState.coupleView = 'pageList';
         uiState.albumTab = 'pages';
+        uiState.albumPageScope = uiState.albumPageScope || 'shared';
+        await syncCompletedPagesFromSupabase(uiState.albumPageScope);
       }
       navigate(button.dataset.homeNav);
     });
@@ -7268,6 +7290,13 @@ function bindComposeEvents() {
     return;
   }
 
+  document.querySelectorAll('[data-compose-save-scope]').forEach((button) => {
+    button.addEventListener('click', () => {
+      uiState.composeSaveScope = button.dataset.composeSaveScope === 'personal' ? 'personal' : 'shared';
+      renderScreen();
+    });
+  });
+
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const draftSnapshot = await finalizeComposeDraftSnapshot();
@@ -7290,19 +7319,36 @@ function bindComposeEvents() {
         },
       });
     } else {
-      addPost({
-        authorName: profileName,
-        caption: buildComposeCaption(values),
-        imageData,
+      const composeData = {
+        ...values,
         fixedTags: draftSnapshot.fixedTags,
         freeTags: draftSnapshot.freeTags,
-        composeData: {
-          ...values,
+        standardFiles: draftSnapshot.standardFiles,
+        storageScope: uiState.composeSaveScope || 'shared',
+      };
+      try {
+        const completedPage = await saveCompletedPageToSupabase({
+          pageId: `compose_${Date.now()}`,
+          title: buildComposeCaption(values),
+          imageData,
+          composeData,
           fixedTags: draftSnapshot.fixedTags,
           freeTags: draftSnapshot.freeTags,
-          standardFiles: draftSnapshot.standardFiles,
-        },
-      });
+          storageScope: uiState.composeSaveScope || 'shared',
+        });
+        upsertPostCache(completedPageToLocalPost(completedPage, profileName));
+      } catch (error) {
+        console.warn('Failed to save completed page to Supabase. Falling back to localStorage.', error);
+        addPost({
+          authorName: profileName,
+          caption: buildComposeCaption(values),
+          imageData,
+          fixedTags: draftSnapshot.fixedTags,
+          freeTags: draftSnapshot.freeTags,
+          storageScope: uiState.composeSaveScope || 'shared',
+          composeData,
+        });
+      }
     }
 
     if (uiState.composeDraftId) {
@@ -8187,6 +8233,7 @@ async function saveRecordGeneratedPage({
     recordPhotoFeather: uiState.recordPhotoFeather !== false,
     createdAt: recordCreatedAt,
     title,
+    storageScope: uiState.recordSaveScope || 'shared',
   };
 
   if (localOnly) {
@@ -8199,6 +8246,7 @@ async function saveRecordGeneratedPage({
       imageData,
       fixedTags: ['record'],
       freeTags: [],
+      storageScope: uiState.recordSaveScope || 'shared',
       likes: 0,
       saves: 0,
       comments: [],
@@ -8223,6 +8271,7 @@ async function saveRecordGeneratedPage({
         fixedTags: ['record'],
         freeTags: [],
         createdAt: recordCreatedAt,
+        storageScope: uiState.recordSaveScope || 'shared',
       });
     } catch (error) {
       console.warn('Failed to save record page to Supabase. Falling back to localStorage.', error);
@@ -8237,6 +8286,7 @@ async function saveRecordGeneratedPage({
       imageData,
       fixedTags: ['record'],
       freeTags: [],
+      storageScope: uiState.recordSaveScope || 'shared',
       createdAt: recordCreatedAt,
       composeData,
       });
@@ -8579,6 +8629,13 @@ function bindRecordEvents() {
     renderScreen();
   });
 
+  document.querySelectorAll('[data-record-save-scope]').forEach((button) => {
+    button.addEventListener('click', () => {
+      uiState.recordSaveScope = button.dataset.recordSaveScope === 'personal' ? 'personal' : 'shared';
+      renderScreen();
+    });
+  });
+
   document.querySelector('[data-record-save-page]')?.addEventListener('click', async (event) => {
     const button = event.currentTarget;
     const previousText = button.textContent;
@@ -8741,6 +8798,7 @@ function bindProfileEvents() {
           const row = Array.isArray(result?.data) ? result.data[0] : result?.data;
           if (row?.new_space_id) {
             setPreferredMemorySpaceId(user.id, row.new_space_id);
+            setPersonalMemorySpaceId(user.id, row.new_space_id);
           }
           uiState.partnerProfile = {
             loading: false,
@@ -8796,9 +8854,12 @@ function bindProfileEvents() {
   });
 
   document.querySelectorAll('[data-open-pages-list]').forEach((button) => {
-    button.addEventListener('click', () => {
+    button.addEventListener('click', async () => {
       uiState.coupleView = 'pageList';
+      uiState.albumTab = 'pages';
+      uiState.albumPageScope = uiState.albumPageScope || 'shared';
       uiState.screen = 'search';
+      await syncCompletedPagesFromSupabase(uiState.albumPageScope);
       render();
     });
   });
@@ -8864,10 +8925,11 @@ function bindProfileEvents() {
       try {
         const invite = await createInviteLink();
         uiState.inviteLink = {
+          ...uiState.inviteLink,
           busy: false,
-          url: invite.url,
+          url: '',
           code: invite.code,
-          message: '招待リンクを発行しました',
+          message: '招待コードを発行しました',
           error: '',
         };
       } catch (error) {
@@ -8875,7 +8937,7 @@ function bindProfileEvents() {
           ...uiState.inviteLink,
           busy: false,
           message: '',
-          error: error?.message || '招待リンクの発行に失敗しました',
+          error: error?.message || '招待コードの発行に失敗しました',
         };
       }
       renderScreen();
@@ -8885,7 +8947,7 @@ function bindProfileEvents() {
   document.querySelectorAll('[data-copy-invite-link]').forEach((button) => {
     button.addEventListener('click', async () => {
       const input = document.querySelector('[data-invite-link-output]');
-      const value = input?.value || uiState.inviteLink.url || '';
+      const value = input?.value || uiState.inviteLink.code || '';
       if (!value) return;
       try {
         await navigator.clipboard?.writeText(value);
@@ -8899,6 +8961,47 @@ function bindProfileEvents() {
         message: 'コピーしました',
         error: '',
       };
+      renderScreen();
+    });
+  });
+
+  document.querySelectorAll('[data-settings-invite-code-form]').forEach((form) => {
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (uiState.inviteLink.acceptBusy) return;
+      const formData = new FormData(form);
+      const code = String(formData.get('inviteCode') || '').trim();
+      uiState.inviteLink = {
+        ...uiState.inviteLink,
+        acceptCode: code,
+        acceptBusy: true,
+        message: '',
+        error: '',
+      };
+      renderScreen();
+      try {
+        await acceptInviteLink(code);
+        uiState.albumPageScope = 'shared';
+        uiState.inviteLink = {
+          ...uiState.inviteLink,
+          acceptCode: '',
+          acceptBusy: false,
+          message: '招待コードを承認しました',
+          error: '',
+        };
+        await Promise.all([
+          syncPartnerProfileFromSupabase(),
+          syncCompletedPagesFromSupabase('shared'),
+          syncPhotoAssetsFromSupabase(),
+        ]);
+      } catch (error) {
+        uiState.inviteLink = {
+          ...uiState.inviteLink,
+          acceptBusy: false,
+          message: '',
+          error: error?.message || '招待コードの承認に失敗しました',
+        };
+      }
       renderScreen();
     });
   });

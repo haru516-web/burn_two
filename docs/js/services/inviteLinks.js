@@ -6,23 +6,13 @@ export function getInviteCodeFromUrl() {
   return String(new URLSearchParams(window.location.search).get('code') || '').trim();
 }
 
-export function buildInviteUrl(code) {
-  if (typeof window === 'undefined' || !code) return '';
-  const basePath = window.location.pathname
-    .replace(/\/(?:index\.html)?$/, '/')
-    .replace(/\/(?:invite|404\.html)\/?$/, '/');
-  const url = new URL('invite', `${window.location.origin}${basePath}`);
-  url.searchParams.set('code', code);
-  return url.toString();
-}
-
 function createInviteCode() {
   const bytes = new Uint8Array(6);
   crypto.getRandomValues(bytes);
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('').toUpperCase();
 }
 
-async function createInviteLinkDirect(client, user, memorySpaceId) {
+async function createInviteCodeDirect(client, user, memorySpaceId) {
   const expiresAt = new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)).toISOString();
   let lastError = null;
 
@@ -43,7 +33,6 @@ async function createInviteLinkDirect(client, user, memorySpaceId) {
       const rowCode = String(data?.code || code).trim();
       return {
         code: rowCode,
-        url: buildInviteUrl(rowCode),
         expiresAt: data?.expires_at || expiresAt,
       };
     }
@@ -58,7 +47,7 @@ async function createInviteLinkDirect(client, user, memorySpaceId) {
 export async function createInviteLink() {
   const client = requireSupabase();
   const { user, memorySpaceId } = await ensureProfileAndMemorySpace();
-  return createInviteLinkDirect(client, user, memorySpaceId);
+  return createInviteCodeDirect(client, user, memorySpaceId);
 }
 
 export async function acceptInviteLink(code) {

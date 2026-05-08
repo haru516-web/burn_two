@@ -554,7 +554,13 @@ function renderAlbumEmpty(type = 'pages') {
 
 function renderPageList(state, uiState = {}) {
   const activeAlbumTab = uiState.albumTab === 'photo' ? 'photo' : 'pages';
+  const activePageScope = uiState.albumPageScope === 'personal' ? 'personal' : 'shared';
   const posts = (state.posts || [])
+    .filter((post) => {
+      if (activeAlbumTab !== 'pages') return true;
+      if (!String(post.id || '').startsWith('completed_')) return activePageScope === 'shared';
+      return (post.storageScope || 'shared') === activePageScope;
+    })
     .slice()
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const photos = (state.recordMemories || [])
@@ -573,6 +579,12 @@ function renderPageList(state, uiState = {}) {
       <button class="${activeAlbumTab === 'pages' ? 'is-active' : ''}" type="button" data-album-tab="pages" role="tab" aria-selected="${activeAlbumTab === 'pages'}">pages</button>
       <button class="${activeAlbumTab === 'photo' ? 'is-active' : ''}" type="button" data-album-tab="photo" role="tab" aria-selected="${activeAlbumTab === 'photo'}">photo</button>
     </div>
+    ${activeAlbumTab === 'pages' ? `
+      <div class="couple-album-tabs" role="tablist" aria-label="ページ保存先">
+        <button class="${activePageScope === 'shared' ? 'is-active' : ''}" type="button" data-album-page-scope="shared" role="tab" aria-selected="${activePageScope === 'shared'}">共有ページ</button>
+        <button class="${activePageScope === 'personal' ? 'is-active' : ''}" type="button" data-album-page-scope="personal" role="tab" aria-selected="${activePageScope === 'personal'}">個人ページ</button>
+      </div>
+    ` : ''}
     <section class="couple-date-list-page couple-album-grid">
       ${items.length
         ? (activeAlbumTab === 'photo' ? photos.map(renderPhotoListEntry).join('') : posts.map(renderPageListEntry).join(''))

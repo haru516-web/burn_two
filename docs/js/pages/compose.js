@@ -692,7 +692,17 @@ function renderCustomTools(isCustomTemplate) {
   `;
 }
 
-function renderTagScreen({ selectedFixedTags, freeTagsValue, submitLabel }) {
+function renderSaveScopeControl(saveScope = 'shared') {
+  const activeScope = saveScope === 'personal' ? 'personal' : 'shared';
+  return `
+    <div class="couple-album-tabs" role="tablist" aria-label="保存先">
+      <button class="${activeScope === 'shared' ? 'is-active' : ''}" type="button" data-compose-save-scope="shared" role="tab" aria-selected="${activeScope === 'shared'}">共有に保存</button>
+      <button class="${activeScope === 'personal' ? 'is-active' : ''}" type="button" data-compose-save-scope="personal" role="tab" aria-selected="${activeScope === 'personal'}">個人に保存</button>
+    </div>
+  `;
+}
+
+function renderTagScreen({ selectedFixedTags, freeTagsValue, submitLabel, saveScope }) {
   return `
     <section class="page page--compose page--compose--tags" data-compose-stage="tags">
       <header class="page-header page-header--with-back page-header--compose compose-stage-header">
@@ -708,6 +718,7 @@ function renderTagScreen({ selectedFixedTags, freeTagsValue, submitLabel }) {
           ${renderTagsStagePanel(selectedFixedTags, freeTagsValue)}
         </section>
         <div class="compose-flow-actions">
+          ${renderSaveScopeControl(saveScope)}
           <button class="button button--ghost compose-draft-button" type="button" data-save-compose-draft>Save Draft</button>
           <button class="button button--primary compose-submit-button" type="submit">${submitLabel}</button>
         </div>
@@ -754,6 +765,7 @@ export function renderCompose(selectedTemplateId = DEFAULT_COMPOSE_TEMPLATE) {
       selectedFixedTags,
       freeTagsValue,
       submitLabel,
+      saveScope: options.saveScope,
     });
   }
 

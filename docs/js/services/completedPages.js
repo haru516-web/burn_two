@@ -2,9 +2,14 @@ import { requireSupabase } from './supabase.js';
 
 const COMPLETED_PAGES_BUCKET = 'completed-pages';
 const ACTIVE_SPACE_KEY = 'burn-active-memory-space-v1';
+const PERSONAL_SPACE_KEY = 'burn-personal-memory-space-v1';
 
 function getActiveSpaceStorageKey(userId) {
   return `${ACTIVE_SPACE_KEY}:${userId}`;
+}
+
+function getPersonalSpaceStorageKey(userId) {
+  return `${PERSONAL_SPACE_KEY}:${userId}`;
 }
 
 function getPreferredMemorySpaceId(userId) {
@@ -16,12 +21,30 @@ function getPreferredMemorySpaceId(userId) {
   }
 }
 
+function getPersonalMemorySpaceId(userId) {
+  if (typeof localStorage === 'undefined' || !userId) return '';
+  try {
+    return localStorage.getItem(getPersonalSpaceStorageKey(userId)) || '';
+  } catch {
+    return '';
+  }
+}
+
 export function setPreferredMemorySpaceId(userId, memorySpaceId) {
   if (typeof localStorage === 'undefined' || !userId || !memorySpaceId) return;
   try {
     localStorage.setItem(getActiveSpaceStorageKey(userId), memorySpaceId);
   } catch {
     // Non-critical. The latest membership fallback still keeps invitees on the shared space.
+  }
+}
+
+export function setPersonalMemorySpaceId(userId, memorySpaceId) {
+  if (typeof localStorage === 'undefined' || !userId || !memorySpaceId) return;
+  try {
+    localStorage.setItem(getPersonalSpaceStorageKey(userId), memorySpaceId);
+  } catch {
+    // Non-critical. A personal space can be recreated if local storage is unavailable.
   }
 }
 
@@ -83,7 +106,41 @@ async function upsertProfile(client, user) {
   if (minimalError) throw minimalError;
 }
 
-export async function ensureProfileAndMemorySpace() {
+async function getVerifiedMembership(client, userId, spaceId) {
+  if (!spaceId) return null;
+  const { data, error } = await client
+    .from('space_members')
+    .select('space_id')
+    .eq('user_id', userId)
+    .eq('space_id', spaceId)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.space_id || null;
+}
+
+async function createOwnedMemorySpace(client, userId) {
+  const { data: space, error: spaceError } = await client
+    .from('memory_spaces')
+    .insert({
+      owner_id: userId,
+    })
+    .select('id')
+    .single();
+  if (spaceError) throw spaceError;
+
+  const { error: memberError } = await client
+    .from('space_members')
+    .upsert({
+      space_id: space.id,
+      user_id: userId,
+      role: 'owner',
+    }, { onConflict: 'space_id,user_id' });
+  if (memberError) throw memberError;
+
+  return space.id;
+}
+
+export async function ensureProfileAndMemorySpace({ scope = 'shared' } = {}) {
   const client = requireSupabase();
   const { data: userData, error: userError } = await client.auth.getUser();
   if (userError) throw userError;
@@ -92,18 +149,22 @@ export async function ensureProfileAndMemorySpace() {
 
   await upsertProfile(client, user);
 
-  const preferredMemorySpaceId = getPreferredMemorySpaceId(user.id);
-  if (preferredMemorySpaceId) {
-    const { data: preferredMembership, error: preferredError } = await client
-      .from('space_members')
-      .select('space_id')
-      .eq('user_id', user.id)
-      .eq('space_id', preferredMemorySpaceId)
-      .maybeSingle();
-    if (preferredError) throw preferredError;
-    if (preferredMembership?.space_id) {
-      return { user, memorySpaceId: preferredMembership.space_id };
+  if (scope === 'personal') {
+    const personalMemorySpaceId = getPersonalMemorySpaceId(user.id);
+    const verifiedPersonalSpaceId = await getVerifiedMembership(client, user.id, personalMemorySpaceId);
+    if (verifiedPersonalSpaceId) {
+      return { user, memorySpaceId: verifiedPersonalSpaceId, storageScope: 'personal' };
     }
+
+    const personalSpaceId = await createOwnedMemorySpace(client, user.id);
+    setPersonalMemorySpaceId(user.id, personalSpaceId);
+    return { user, memorySpaceId: personalSpaceId, storageScope: 'personal' };
+  }
+
+  const preferredMemorySpaceId = getPreferredMemorySpaceId(user.id);
+  const verifiedPreferredSpaceId = await getVerifiedMembership(client, user.id, preferredMemorySpaceId);
+  if (verifiedPreferredSpaceId) {
+    return { user, memorySpaceId: verifiedPreferredSpaceId, storageScope: 'shared' };
   }
 
   const { data: membership, error: membershipError } = await client
@@ -116,29 +177,13 @@ export async function ensureProfileAndMemorySpace() {
   if (membershipError) throw membershipError;
   if (membership?.space_id) {
     setPreferredMemorySpaceId(user.id, membership.space_id);
-    return { user, memorySpaceId: membership.space_id };
+    return { user, memorySpaceId: membership.space_id, storageScope: 'shared' };
   }
 
-  const { data: space, error: spaceError } = await client
-    .from('memory_spaces')
-    .insert({
-      owner_id: user.id,
-    })
-    .select('id')
-    .single();
-  if (spaceError) throw spaceError;
-
-  const { error: memberError } = await client
-    .from('space_members')
-    .upsert({
-      space_id: space.id,
-      user_id: user.id,
-      role: 'owner',
-    }, { onConflict: 'space_id,user_id' });
-  if (memberError) throw memberError;
-
-  setPreferredMemorySpaceId(user.id, space.id);
-  return { user, memorySpaceId: space.id };
+  const spaceId = await createOwnedMemorySpace(client, user.id);
+  setPreferredMemorySpaceId(user.id, spaceId);
+  setPersonalMemorySpaceId(user.id, spaceId);
+  return { user, memorySpaceId: spaceId, storageScope: 'shared' };
 }
 
 export function extractTextLayers(editorSnapshot = {}) {
@@ -158,9 +203,11 @@ export async function saveCompletedPage({
   title,
   editorSnapshot,
   finalImageData,
+  storageScope = 'shared',
 }) {
   const client = requireSupabase();
-  const { user, memorySpaceId } = await ensureProfileAndMemorySpace();
+  const resolvedScope = storageScope === 'personal' ? 'personal' : 'shared';
+  const { user, memorySpaceId } = await ensureProfileAndMemorySpace({ scope: resolvedScope });
   const completedPageId = crypto.randomUUID();
   const finalImagePath = `${memorySpaceId}/${completedPageId}/final.webp`;
   const finalImageBlob = dataUrlToBlob(finalImageData || editorSnapshot?.imageData || '');
@@ -190,6 +237,7 @@ export async function saveCompletedPage({
         imageData: '',
         finalImagePath,
         isLocked: true,
+        storageScope: resolvedScope,
       },
       updated_at: now,
     })
@@ -197,12 +245,16 @@ export async function saveCompletedPage({
     .single();
 
   if (error) throw error;
-  return data;
+  return {
+    ...data,
+    storageScope: resolvedScope,
+  };
 }
 
-export async function listCompletedPages() {
+export async function listCompletedPages({ storageScope = 'shared' } = {}) {
   const client = requireSupabase();
-  const { memorySpaceId } = await ensureProfileAndMemorySpace();
+  const resolvedScope = storageScope === 'personal' ? 'personal' : 'shared';
+  const { memorySpaceId } = await ensureProfileAndMemorySpace({ scope: resolvedScope });
   const { data, error } = await client
     .from('completed_pages')
     .select('*')
@@ -212,6 +264,7 @@ export async function listCompletedPages() {
   if (error) throw error;
   return Promise.all((data || []).map(async (page) => ({
     ...page,
+    storageScope: resolvedScope,
     finalImageUrl: await createCompletedPageUrl(client, page.final_image_path || page.final_base_image_path || page.final_preview_image_path),
   })));
 }
@@ -236,6 +289,7 @@ export function completedPageToLocalPost(page, authorName = 'you') {
     saved: false,
     createdAt: snapshot.createdAt || snapshot.composeData?.createdAt || page.completed_at || page.created_at || new Date().toISOString(),
     updatedAt: page.updated_at || null,
+    storageScope: page.storageScope || snapshot.storageScope || 'shared',
     composeData: {
       ...(snapshot.composeData || snapshot),
       source: snapshot.source || snapshot.composeData?.source || 'completed_page',

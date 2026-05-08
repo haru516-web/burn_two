@@ -1,33 +1,37 @@
-# Record Template Plan
+# Plan: Invite Code And Page Save Scope
 
 ## Goal
-Use `docs/references/template_for_record` as selectable magazine-page templates for the record flow. Users only choose a template; the app automatically places selected memory photos and text into that template.
+- Replace invite-link UI with invite-code generation/input inside settings.
+- Keep couple_id/shared memory space model.
+- Allow completed pages to be saved to exactly one destination: shared couple space or personal space.
+- Let album pages switch between shared pages and personal pages, defaulting to shared pages.
 
-## Current Constraints
-- Keep the existing record route, local state, and saved memory format.
-- Avoid new dependencies.
-- Reuse the current record select and complete stages.
-- Keep generated pages capturable by the existing DOM capture flow.
+## Constraints
+- Keep existing Supabase tables and `space_id` model.
+- Avoid broad routing/auth changes.
+- Keep GitHub Pages build output in `docs` updated.
 
-## Target Files
-- `docs/js/pages/record.js`
+## Target files
+- `docs/js/services/completedPages.js`
+- `docs/js/services/inviteLinks.js`
+- `docs/js/pages/profile.js`
+- `docs/js/pages/search.js`
 - `docs/js/app.js`
-- `docs/js/templates/recordTemplates.js`
-- `docs/css/record.css`
-- `PLANS.md`
+- `docs/js/core/store.js`
+- `docs/css/profile.css` / existing CSS only if needed
+- `supabase/schema.sql` only if a small RPC/helper is required
 
-## Implementation Steps
-1. Add record template metadata for six reference PNGs.
-2. Add a template picker to the record selection step.
-3. Store the selected record template in transient `uiState`.
-4. Render the completion preview using the selected template layout.
-5. Save/post the generated page with the selected template id in `composeData`.
-6. Run build validation.
+## Implementation steps
+1. Add personal/shared page scope resolution in completed page service.
+2. Change invite UI to code generation + code input acceptance.
+3. Add save destination control for page posting flows.
+4. Add album pages scope tabs, default shared.
+5. Build, verify generated assets, commit and push.
 
-## Validation Steps
-- Run `npm.cmd run build`.
-- Confirm the record flow still caps selection at three memories.
-- Confirm the completion preview renders from the selected template.
+## Validation
+- `npm.cmd run build`
+- Verify built `docs/index.html` and `docs/404.html` point to the latest main asset.
+- Verify source and built assets include invite code and page scope strings.
 
-## Open Questions
-- The current record memories only store creation date, so template pages use the selected memories' existing time/place/memo fields.
+## Notes
+- Supabase SQL may be needed only for production RPC availability if we add/adjust functions.

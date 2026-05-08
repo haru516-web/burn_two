@@ -71,26 +71,30 @@ function renderProfileBook(profile = {}, isOpen = false) {
 }
 
 function renderInviteLinkCard(invite = {}) {
-  const hasUrl = Boolean(invite.url);
+  const hasCode = Boolean(invite.code);
   const status = invite.error || invite.message || '';
   return `
     <section class="futari-dashboard-invite futari-dashboard-card">
       <div class="futari-dashboard-invite__copy">
         <p>Invitation</p>
-        <h2>相手を招待</h2>
-        <small>リンクを送ると、ログイン後にふたりのスペースへ参加できます。</small>
+        <h2>招待コード</h2>
+        <small>相手にコードを伝えるか、相手から届いたコードを入力して共有スペースに参加します。</small>
       </div>
       <button class="futari-dashboard-invite__button" type="button" data-create-invite-link ${invite.busy ? 'disabled' : ''}>
-        ${invite.busy ? '発行中' : '招待リンクを発行'}
+        ${invite.busy ? '発行中' : '招待コードを発行'}
       </button>
-      ${hasUrl ? `
+      ${hasCode ? `
         <div class="futari-dashboard-invite__result">
-          <input type="text" readonly value="${escapeHtml(invite.url)}" data-invite-link-output aria-label="招待リンク" />
-          <button type="button" data-copy-invite-link aria-label="招待リンクをコピー">
+          <input type="text" readonly value="${escapeHtml(invite.code)}" data-invite-link-output aria-label="招待コード" />
+          <button type="button" data-copy-invite-link aria-label="招待コードをコピー">
             ${getIcon('copy')}
           </button>
         </div>
       ` : ''}
+      <form class="futari-dashboard-invite__result" data-settings-invite-code-form>
+        <input type="text" name="inviteCode" value="${escapeHtml(invite.acceptCode || '')}" placeholder="招待コードを入力" autocomplete="off" />
+        <button type="submit" ${invite.acceptBusy ? 'disabled' : ''}>${invite.acceptBusy ? '確認中' : '決定'}</button>
+      </form>
       ${status ? `<p class="futari-dashboard-invite__status ${invite.error ? 'is-error' : ''}">${escapeHtml(status)}</p>` : ''}
     </section>
   `;

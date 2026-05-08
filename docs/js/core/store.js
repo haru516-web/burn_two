@@ -88,6 +88,7 @@ function normalizePost(post) {
     saved: Boolean(post.saved),
     createdAt: post.createdAt || new Date().toISOString(),
     updatedAt: post.updatedAt || null,
+    storageScope: post.storageScope === 'personal' ? 'personal' : 'shared',
     composeData: normalizeComposeData(post),
   };
 }
@@ -258,17 +259,22 @@ export function upsertPostCacheMany(posts = []) {
   });
 }
 
-export function replaceCompletedPostCache(posts = []) {
+export function replaceCompletedPostCache(posts = [], storageScope = 'shared') {
+  const resolvedScope = storageScope === 'personal' ? 'personal' : 'shared';
   const next = structuredClone(state);
   const completedPosts = Array.isArray(posts)
     ? posts.map((post) => normalizePost({
         ...post,
+        storageScope: post.storageScope || resolvedScope,
         createdAt: post.createdAt || new Date().toISOString(),
       }))
     : [];
   next.posts = [
     ...completedPosts,
-    ...next.posts.filter((post) => !String(post.id || '').startsWith('completed_')),
+    ...next.posts.filter((post) => (
+      !String(post.id || '').startsWith('completed_')
+      || (post.storageScope || 'shared') !== resolvedScope
+    )),
   ];
   commit(next);
 }

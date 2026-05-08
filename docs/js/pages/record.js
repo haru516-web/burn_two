@@ -431,7 +431,8 @@ function renderGeneratedPagePreview(memories, templateId = DEFAULT_RECORD_TEMPLA
   `;
 }
 
-function renderRecordComplete(memories, templateId = DEFAULT_RECORD_TEMPLATE, recordTitle = '', recordDate = '', backgroundId = DEFAULT_RECORD_BACKGROUND, photoFeather = true) {
+function renderRecordComplete(memories, templateId = DEFAULT_RECORD_TEMPLATE, recordTitle = '', recordDate = '', backgroundId = DEFAULT_RECORD_BACKGROUND, photoFeather = true, saveScope = 'shared') {
+  const activeScope = saveScope === 'personal' ? 'personal' : 'shared';
   return `
     <section class="record-page record-page--complete">
       <header class="record-stack-header">
@@ -443,6 +444,10 @@ function renderRecordComplete(memories, templateId = DEFAULT_RECORD_TEMPLATE, re
         <h2>今日の思い出が<br />1ページになりました</h2>
       </div>
       ${renderGeneratedPagePreview(memories, templateId, recordTitle, recordDate, backgroundId, photoFeather)}
+      <div class="couple-album-tabs" role="tablist" aria-label="保存先">
+        <button class="${activeScope === 'shared' ? 'is-active' : ''}" type="button" data-record-save-scope="shared" role="tab" aria-selected="${activeScope === 'shared'}">共有に保存</button>
+        <button class="${activeScope === 'personal' ? 'is-active' : ''}" type="button" data-record-save-scope="personal" role="tab" aria-selected="${activeScope === 'personal'}">個人に保存</button>
+      </div>
       <div class="record-complete-actions">
         <button type="button" data-record-save-page>${getIcon('download')}<span>写真を保存</span></button>
         <button type="button" data-record-post-page>${getIcon('camera')}<span>投稿する</span></button>
@@ -486,6 +491,6 @@ export function renderRecord(state, uiState) {
   const photoFeather = uiState.recordPhotoFeather !== false;
   if (stage === 'select') return renderRecordSelect(memories, uiState.recordSelectedIds || [], uiState.recordTemplateId || DEFAULT_RECORD_TEMPLATE, uiState.recordTitle || '', photoFeather);
   if (stage === 'preview') return renderRecordPreview(getSelectedMemories(memories, uiState.recordSelectedIds || []), uiState.recordTemplateId || DEFAULT_RECORD_TEMPLATE, uiState.recordTitle || '', recordDate, uiState.recordBackgroundId || DEFAULT_RECORD_BACKGROUND, photoFeather);
-  if (stage === 'complete') return renderRecordComplete(getSelectedMemories(memories, uiState.recordSelectedIds || []), uiState.recordTemplateId || DEFAULT_RECORD_TEMPLATE, uiState.recordTitle || '', recordDate, uiState.recordBackgroundId || DEFAULT_RECORD_BACKGROUND, photoFeather);
+  if (stage === 'complete') return renderRecordComplete(getSelectedMemories(memories, uiState.recordSelectedIds || []), uiState.recordTemplateId || DEFAULT_RECORD_TEMPLATE, uiState.recordTitle || '', recordDate, uiState.recordBackgroundId || DEFAULT_RECORD_BACKGROUND, photoFeather, uiState.recordSaveScope || 'shared');
   return renderRecordHome(memories, recordDate);
 }
