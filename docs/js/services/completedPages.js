@@ -1,6 +1,29 @@
 import { requireSupabase } from './supabase.js';
 
 const COMPLETED_PAGES_BUCKET = 'completed-pages';
+const ACTIVE_SPACE_KEY = 'burn-active-memory-space-v1';
+
+function getActiveSpaceStorageKey(userId) {
+  return `${ACTIVE_SPACE_KEY}:${userId}`;
+}
+
+function getPreferredMemorySpaceId(userId) {
+  if (typeof localStorage === 'undefined' || !userId) return '';
+  try {
+    return localStorage.getItem(getActiveSpaceStorageKey(userId)) || '';
+  } catch {
+    return '';
+  }
+}
+
+export function setPreferredMemorySpaceId(userId, memorySpaceId) {
+  if (typeof localStorage === 'undefined' || !userId || !memorySpaceId) return;
+  try {
+    localStorage.setItem(getActiveSpaceStorageKey(userId), memorySpaceId);
+  } catch {
+    // Non-critical. The latest membership fallback still keeps invitees on the shared space.
+  }
+}
 
 function getUserEmail(user) {
   return user?.email || user?.user_metadata?.email || '';
@@ -69,15 +92,30 @@ export async function ensureProfileAndMemorySpace() {
 
   await upsertProfile(client, user);
 
+  const preferredMemorySpaceId = getPreferredMemorySpaceId(user.id);
+  if (preferredMemorySpaceId) {
+    const { data: preferredMembership, error: preferredError } = await client
+      .from('space_members')
+      .select('space_id')
+      .eq('user_id', user.id)
+      .eq('space_id', preferredMemorySpaceId)
+      .maybeSingle();
+    if (preferredError) throw preferredError;
+    if (preferredMembership?.space_id) {
+      return { user, memorySpaceId: preferredMembership.space_id };
+    }
+  }
+
   const { data: membership, error: membershipError } = await client
     .from('space_members')
     .select('space_id')
     .eq('user_id', user.id)
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
   if (membershipError) throw membershipError;
   if (membership?.space_id) {
+    setPreferredMemorySpaceId(user.id, membership.space_id);
     return { user, memorySpaceId: membership.space_id };
   }
 
@@ -99,6 +137,7 @@ export async function ensureProfileAndMemorySpace() {
     }, { onConflict: 'space_id,user_id' });
   if (memberError) throw memberError;
 
+  setPreferredMemorySpaceId(user.id, space.id);
   return { user, memorySpaceId: space.id };
 }
 

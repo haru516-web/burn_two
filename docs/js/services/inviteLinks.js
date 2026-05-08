@@ -1,5 +1,5 @@
 import { requireSupabase } from './supabase.js';
-import { ensureProfileAndMemorySpace } from './completedPages.js';
+import { ensureProfileAndMemorySpace, setPreferredMemorySpaceId } from './completedPages.js';
 
 export function getInviteCodeFromUrl() {
   if (typeof window === 'undefined') return '';
@@ -71,6 +71,10 @@ export async function acceptInviteLink(code) {
   });
   if (error) throw error;
   const row = Array.isArray(data) ? data[0] : data;
+  if (row?.couple_id) {
+    const { user } = await ensureProfileAndMemorySpace();
+    setPreferredMemorySpaceId(user.id, row.couple_id);
+  }
   return {
     coupleId: row?.couple_id || null,
     status: row?.status || 'accepted',
