@@ -9313,7 +9313,7 @@ function applyAuthSession(session) {
 function applyInviteRouteFromUrl() {
   if (typeof window === 'undefined') return false;
   const code = getInviteCodeFromUrl();
-  const isInvitePath = window.location.pathname === '/invite';
+  const isInvitePath = /\/invite\/?$/.test(window.location.pathname);
   if (!code && !isInvitePath) return false;
   uiState.screen = 'invite';
   uiState.inviteCode = code;

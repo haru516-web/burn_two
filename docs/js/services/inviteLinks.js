@@ -8,7 +8,10 @@ export function getInviteCodeFromUrl() {
 
 export function buildInviteUrl(code) {
   if (typeof window === 'undefined' || !code) return '';
-  const url = new URL('/invite', window.location.origin);
+  const basePath = window.location.pathname
+    .replace(/\/(?:index\.html)?$/, '/')
+    .replace(/\/(?:invite|404\.html)\/?$/, '/');
+  const url = new URL('invite', `${window.location.origin}${basePath}`);
   url.searchParams.set('code', code);
   return url.toString();
 }
