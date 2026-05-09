@@ -90,6 +90,7 @@ const uiState = {
   homeCoreState: 'default',
   homeCoreTapTimestamps: [],
   previewPostId: null,
+  previewPhotoId: null,
   openingMemoryPostId: null,
   commentPostId: null,
   plusPlanOpen: false,
@@ -656,6 +657,10 @@ function getActivePost(postId) {
   return getState().posts.find((post) => post.id === postId);
 }
 
+function getActivePhoto(photoId) {
+  return getState().recordMemories.find((memory) => memory.id === photoId);
+}
+
 function getRandomOpeningMemoryPost() {
   const posts = (getState().posts || []).filter((post) => post?.imageData);
   if (!posts.length) return null;
@@ -823,6 +828,7 @@ function renderModals() {
   modalRoot.innerHTML = `
     ${renderCommentsModal(commentPost)}
     ${renderOpeningMemoryOverlay()}
+    ${renderPhotoPreviewOverlay()}
     ${renderPlusPlanModal()}
     ${renderRecordPostingOverlay()}
   `;
@@ -869,6 +875,27 @@ function renderPlusPlanModal() {
           </button>
         </div>
       </section>
+    </div>
+  `;
+}
+
+function renderPhotoPreviewOverlay() {
+  const photo = uiState.previewPhotoId ? getActivePhoto(uiState.previewPhotoId) : null;
+  if (!photo?.imageData) return '';
+  const dateLabel = escapeHtml(new Date(photo.createdAt || Date.now()).toLocaleDateString('ja-JP').replace(/\//g, '.'));
+  return `
+    <div class="opening-memory-overlay opening-memory-overlay--photo" role="dialog" aria-modal="true" aria-label="photo preview">
+      <div class="opening-memory-overlay__frame">
+        <div class="opening-memory-overlay__bar">
+          <p class="opening-memory-overlay__date">${dateLabel}</p>
+          <button class="opening-memory-overlay__close" type="button" data-close-photo-preview aria-label="Close">
+            ${getIcon('close')}
+          </button>
+        </div>
+        <div class="opening-memory-overlay__page">
+          <img src="${photo.imageData}" alt="" />
+        </div>
+      </div>
     </div>
   `;
 }
@@ -1019,6 +1046,7 @@ function navigate(screen) {
   }
   uiState.screen = screen;
   uiState.previewPostId = null;
+  uiState.previewPhotoId = null;
   uiState.commentPostId = null;
   if (screen === 'compose') {
     uiState.composeStage = 'select';
@@ -1065,6 +1093,7 @@ function navigate(screen) {
 function enterTimelineFromOpening() {
   const openingMemoryPost = getRandomOpeningMemoryPost();
   uiState.previewPostId = null;
+  uiState.previewPhotoId = null;
   uiState.openingMemoryPostId = openingMemoryPost?.id || null;
   uiState.commentPostId = null;
   uiState.openingTapGuardUntil = Date.now() + 700;
@@ -2038,6 +2067,13 @@ function bindPostInteractions(scope = document) {
       const postId = button.dataset.openPreview;
       addImpression(postId);
       openPostDetail(postId);
+    });
+  });
+
+  scope.querySelectorAll('[data-open-photo-preview]').forEach((button) => {
+    button.addEventListener('click', () => {
+      uiState.previewPhotoId = button.dataset.openPhotoPreview || null;
+      renderModals();
     });
   });
 
@@ -7578,6 +7614,28 @@ function drawRecordCameraPreview() {
   recordCameraPreviewFrame = requestAnimationFrame(drawRecordCameraPreview);
 }
 
+async function applyRecordCameraContinuousControls() {
+  const track = recordCameraStream?.getVideoTracks?.()[0];
+  if (!track?.applyConstraints) return;
+  const capabilities = typeof track.getCapabilities === 'function' ? track.getCapabilities() : {};
+  const advanced = [];
+  [
+    ['focusMode', 'continuous'],
+    ['exposureMode', 'continuous'],
+    ['whiteBalanceMode', 'continuous'],
+  ].forEach(([key, value]) => {
+    if (Array.isArray(capabilities[key]) && capabilities[key].includes(value)) {
+      advanced.push({ [key]: value });
+    }
+  });
+  if (!advanced.length) return;
+  try {
+    await track.applyConstraints({ advanced });
+  } catch (error) {
+    console.warn('Record camera continuous controls are not supported on this device.', error);
+  }
+}
+
 async function startRecordCameraStream() {
   const video = document.querySelector('[data-record-camera-video]');
   if (!video || !navigator.mediaDevices?.getUserMedia) {
@@ -7607,6 +7665,7 @@ async function startRecordCameraStream() {
     video.muted = true;
     video.srcObject = stream;
     await video.play().catch(() => {});
+    await applyRecordCameraContinuousControls();
     video.closest('.record-camera-preview')?.classList.add('is-live');
     if (recordCameraPreviewFrame) cancelAnimationFrame(recordCameraPreviewFrame);
     recordCameraPreviewFrame = requestAnimationFrame(drawRecordCameraPreview);
@@ -9526,6 +9585,13 @@ function bindModalEvents() {
   document.querySelectorAll('[data-close-preview]').forEach((element) => {
     element.addEventListener('click', () => {
       uiState.previewPostId = null;
+      renderModals();
+    });
+  });
+
+  document.querySelectorAll('[data-close-photo-preview]').forEach((element) => {
+    element.addEventListener('click', () => {
+      uiState.previewPhotoId = null;
       renderModals();
     });
   });

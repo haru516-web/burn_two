@@ -528,11 +528,12 @@ function renderPageListEntry(post, activePageScope = 'shared') {
 
 function renderPhotoListEntry(memory) {
   const dateText = new Date(memory.createdAt || Date.now()).toLocaleDateString('ja-JP').replace(/\//g, '.');
+  const photoId = String(memory.id || '');
   return `
     <article class="couple-album-page couple-album-page--photo">
-      <div class="couple-album-page__image">
+      <button class="couple-album-page__image" type="button" data-open-photo-preview="${photoId}" aria-label="写真を開く">
         ${memory.imageData ? `<img src="${memory.imageData}" alt="" />` : '<span>photo</span>'}
-      </div>
+      </button>
       <div class="couple-album-page__meta">
         <p class="couple-kicker">${dateText}</p>
       </div>
