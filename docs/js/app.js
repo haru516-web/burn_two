@@ -1,7 +1,7 @@
 import { renderBottomNav } from './components/bottomNav.js';
 import { renderCommentsModal } from './components/modals.js';
 import { getIcon } from './components/icons.js';
-import { getState, switchStateScope, addPost, upsertPostCache, replaceCompletedPostCache, replaceRecordMemories, replaceCoupleDatabaseData, updatePost, deletePost, toggleLike, toggleSave, addComment, addImpression, updateProfile, updateCoupleSettings, toggleFollow, saveIssue, upsertDraft, deleteDraft, addRecordMemory, updateRecordMemory, updateCoupleAnswer, addCoupleCalendarEntry, updateCoupleCalendarEntry, deleteCoupleCalendarEntry, resetCoupleAnswers, toggleCoupleTodo, addCoupleTodo, deleteCoupleTodo } from './core/store.js';
+import { getState, switchStateScope, addPost, upsertPostCache, replaceCompletedPostCache, replaceRecordMemories, replaceCoupleDatabaseData, updatePost, deletePost, toggleLike, toggleSave, addComment, addImpression, updateProfile, updateCoupleSettings, toggleFollow, saveIssue, upsertDraft, deleteDraft, addRecordMemory, updateRecordMemory, deleteRecordMemory, updateCoupleAnswer, addCoupleCalendarEntry, updateCoupleCalendarEntry, deleteCoupleCalendarEntry, resetCoupleAnswers, toggleCoupleTodo, addCoupleTodo, deleteCoupleTodo } from './core/store.js';
 import { renderOpening } from './pages/opening.js';
 import { renderInvite } from './pages/invite.js';
 import { renderHome, renderTimeline } from './pages/timeline.js';
@@ -57,7 +57,7 @@ import {
   setPersonalMemorySpaceId,
   setPreferredMemorySpaceId,
 } from './services/completedPages.js';
-import { listPhotoAssets, savePhotoAsset } from './services/photoAssets.js';
+import { deletePhotoAsset, listPhotoAssets, movePhotoAssetStorageScope, savePhotoAsset, updatePhotoAssetMeta } from './services/photoAssets.js';
 import {
   deleteCoupleCalendarEntryFromDatabase,
   deleteCoupleTodoFromDatabase,
@@ -706,6 +706,12 @@ function getAlbumPhotosForDetail(state = getState()) {
     .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 }
 
+function isOwnPhoto(photo) {
+  if (!photo) return false;
+  if (photo.authorId && uiState.authUser?.id) return photo.authorId === uiState.authUser.id;
+  return true;
+}
+
 function renderPhotoDetail(state, ui = uiState) {
   const photos = getAlbumPhotosForDetail(state);
   const activePhoto = photos.find((photo) => photo.id === ui.previewPhotoId) || photos[0] || null;
@@ -737,11 +743,60 @@ function renderPhotoDetail(state, ui = uiState) {
       <div class="post-detail-feed">
         ${photos.map((photo) => {
           const dateText = escapeHtml(new Date(photo.createdAt || Date.now()).toLocaleDateString('ja-JP').replace(/\//g, '.'));
+          const placeText = escapeHtml(String(photo.place || '').trim());
+          const memoText = escapeHtml(String(photo.memo || '').trim());
+          const canManagePhoto = isOwnPhoto(photo);
+          const authorName = escapeHtml(String(photo.authorName || state.profile?.name || 'you').trim() || 'you');
+          const activeStorageScope = photo.storageScope === 'personal' ? 'personal' : 'shared';
+          const isEditing = ui.photoEditingId === photo.id;
           return `
             <article class="post-detail-card post-detail-card--photo" ${photo.id === activePhoto.id ? 'data-photo-detail-active' : ''}>
+              <div class="post-detail-card__author-row">
+                <div class="post-detail-card__author-main">
+                  <div>
+                    <p class="post-card__author">${authorName}</p>
+                  </div>
+                </div>
+                ${canManagePhoto ? `
+                  <div class="post-detail-card__owner-controls">
+                    <div class="post-detail-card__scope-switch" role="tablist" aria-label="表示先">
+                      <button class="${activeStorageScope === 'shared' ? 'is-active' : ''}" type="button" data-photo-detail-move-scope="${photo.id}" data-photo-detail-move-target="shared" role="tab" aria-selected="${activeStorageScope === 'shared'}" ${activeStorageScope === 'shared' ? 'disabled' : ''}>共有</button>
+                      <button class="${activeStorageScope === 'personal' ? 'is-active' : ''}" type="button" data-photo-detail-move-scope="${photo.id}" data-photo-detail-move-target="personal" role="tab" aria-selected="${activeStorageScope === 'personal'}" ${activeStorageScope === 'personal' ? 'disabled' : ''}>個人</button>
+                    </div>
+                    <button class="post-detail-card__delete-button" type="button" data-edit-photo-detail="${photo.id}" aria-label="写真情報を編集">
+                      ${getIcon('edit')}
+                    </button>
+                    <button class="post-detail-card__delete-button" type="button" data-delete-photo-detail="${photo.id}" aria-label="写真を削除">
+                      ${getIcon('trash')}
+                    </button>
+                  </div>
+                ` : ''}
+              </div>
               <img class="post-detail-card__image post-detail-card__image--photo" src="${photo.imageData}" alt="" />
               <div class="post-detail-card__content">
                 <p class="post-detail-card__time">${dateText}</p>
+                ${isEditing ? `
+                  <form class="post-detail-card__photo-form" data-photo-detail-edit-form="${photo.id}">
+                    <label>
+                      <span>場所</span>
+                      <input type="text" name="place" value="${placeText}" autocomplete="off" />
+                    </label>
+                    <label>
+                      <span>メモ</span>
+                      <textarea name="memo" rows="4">${memoText}</textarea>
+                    </label>
+                    <div class="post-detail-card__photo-form-actions">
+                      <button type="button" data-cancel-photo-detail-edit>キャンセル</button>
+                      <button type="submit">保存</button>
+                    </div>
+                  </form>
+                ` : ''}
+                ${(placeText || memoText) ? `
+                  <div class="post-detail-card__photo-caption">
+                    ${placeText ? `<p class="post-detail-card__photo-place">${placeText}</p>` : ''}
+                    ${memoText ? `<p class="post-detail-card__photo-memo">${memoText}</p>` : ''}
+                  </div>
+                ` : ''}
               </div>
             </article>
           `;
@@ -9876,6 +9931,85 @@ function bindPhotoDetailEvents() {
   document.querySelectorAll('[data-close-photo-detail]').forEach((button) => {
     button.addEventListener('click', () => {
       closePhotoDetail();
+    });
+  });
+
+  document.querySelectorAll('[data-edit-photo-detail]').forEach((button) => {
+    button.addEventListener('click', () => {
+      uiState.photoEditingId = uiState.photoEditingId === button.dataset.editPhotoDetail
+        ? null
+        : button.dataset.editPhotoDetail;
+      renderScreen();
+    });
+  });
+
+  document.querySelectorAll('[data-cancel-photo-detail-edit]').forEach((button) => {
+    button.addEventListener('click', () => {
+      uiState.photoEditingId = null;
+      renderScreen();
+    });
+  });
+
+  document.querySelectorAll('[data-photo-detail-edit-form]').forEach((form) => {
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const photoId = form.dataset.photoDetailEditForm;
+      if (!photoId) return;
+      const formData = new FormData(form);
+      const updates = {
+        place: String(formData.get('place') || '').trim(),
+        memo: String(formData.get('memo') || '').trim(),
+      };
+      updateRecordMemory(photoId, updates);
+      uiState.photoEditingId = null;
+      try {
+        await updatePhotoAssetMeta(photoId, updates);
+      } catch (error) {
+        console.warn('Failed to update photo asset metadata. Keeping local update.', error);
+      }
+      renderScreen();
+    });
+  });
+
+  document.querySelectorAll('[data-photo-detail-move-scope]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const photoId = button.dataset.photoDetailMoveScope;
+      const targetScope = button.dataset.photoDetailMoveTarget === 'personal' ? 'personal' : 'shared';
+      if (!photoId || button.disabled) return;
+      button.disabled = true;
+      updateRecordMemory(photoId, { storageScope: targetScope });
+      try {
+        await movePhotoAssetStorageScope(photoId, targetScope);
+        await syncPhotoAssetsForCurrentConnection(targetScope);
+      } catch (error) {
+        console.warn('Failed to move photo asset scope. Keeping local update.', error);
+      }
+      uiState.albumPhotoScope = targetScope;
+      uiState.previewPhotoId = photoId;
+      renderScreen();
+    });
+  });
+
+  document.querySelectorAll('[data-delete-photo-detail]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const photoId = button.dataset.deletePhotoDetail;
+      if (!photoId) return;
+      if (!window.confirm('この写真を削除しますか？')) return;
+      const photos = getAlbumPhotosForDetail();
+      const nextPhoto = photos.find((photo) => photo.id !== photoId) || null;
+      deleteRecordMemory(photoId);
+      try {
+        await deletePhotoAsset(photoId);
+      } catch (error) {
+        console.warn('Failed to delete photo asset. Removing from local view.', error);
+      }
+      uiState.photoEditingId = null;
+      uiState.previewPhotoId = nextPhoto?.id || null;
+      if (!nextPhoto) {
+        closePhotoDetail();
+        return;
+      }
+      renderScreen();
     });
   });
 }

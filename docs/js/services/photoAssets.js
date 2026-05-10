@@ -78,6 +78,7 @@ function photoAssetToRecordMemory(asset, imageData = '') {
     frame: asset.frame === 'portrait' ? 'portrait' : 'landscape',
     pageCrop: asset.page_crop || { x: 0.5, y: 0.5, zoom: 1 },
     createdAt: capturedAt,
+    updatedAt: asset.updated_at || null,
     expiresAt: asset.expires_at || null,
     storageScope,
     saveScope: asset.display_scope || asset.save_scope || (storageScope === 'personal' ? 'personal' : 'couple'),
@@ -137,6 +138,8 @@ export async function savePhotoAsset({ imageData, sourceType = 'album', frame = 
     storage_path: storagePath,
     thumbnail_path: thumbnailPath,
     captured_at: now.toISOString(),
+    place: String(place || '').trim(),
+    memo: String(memo || '').trim(),
     expires_at: addDays(now, RETENTION_DAYS).toISOString(),
     retention_days: RETENTION_DAYS,
   };
@@ -204,4 +207,71 @@ export async function listPhotoAssets({ storageScope = 'shared' } = {}) {
       || await createPhotoUrl(client, asset.storage_path);
     return photoAssetToRecordMemory({ ...asset, storageScope: resolvedScope }, imageData);
   }));
+}
+
+export async function updatePhotoAssetMeta(photoId, { place = '', memo = '' } = {}) {
+  const normalizedPhotoId = String(photoId || '');
+  if (!normalizedPhotoId) throw new Error('Photo id is missing.');
+
+  const client = requireSupabase();
+  const { user } = await ensureProfileAndMemorySpace({ scope: 'personal' });
+  const { data, error } = await client
+    .from('photo_assets')
+    .update({
+      place: String(place || '').trim(),
+      memo: String(memo || '').trim(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', normalizedPhotoId)
+    .eq('author_id', user.id)
+    .select('*')
+    .single();
+  if (error) throw error;
+  return photoAssetToRecordMemory(data);
+}
+
+export async function movePhotoAssetStorageScope(photoId, nextStorageScope = 'shared') {
+  const normalizedPhotoId = String(photoId || '');
+  if (!normalizedPhotoId) throw new Error('Photo id is missing.');
+
+  const client = requireSupabase();
+  const targetScope = nextStorageScope === 'personal' ? 'personal' : 'shared';
+  const targetDisplayScope = targetScope === 'personal' ? 'personal' : 'couple';
+  const { user } = await ensureProfileAndMemorySpace({ scope: 'personal' });
+  const targetDisplaySpaceId = targetScope === 'shared'
+    ? (await ensureProfileAndMemorySpace({ scope: 'shared' })).memorySpaceId
+    : null;
+
+  const { data, error } = await client
+    .from('photo_assets')
+    .update({
+      display_space_id: targetDisplaySpaceId,
+      display_scope: targetDisplayScope,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', normalizedPhotoId)
+    .eq('author_id', user.id)
+    .select('*')
+    .single();
+  if (error) throw error;
+
+  return photoAssetToRecordMemory({ ...data, storageScope: targetScope });
+}
+
+export async function deletePhotoAsset(photoId) {
+  const normalizedPhotoId = String(photoId || '');
+  if (!normalizedPhotoId) throw new Error('Photo id is missing.');
+
+  const client = requireSupabase();
+  const { user } = await ensureProfileAndMemorySpace({ scope: 'personal' });
+  const { error } = await client
+    .from('photo_assets')
+    .update({
+      deleted_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', normalizedPhotoId)
+    .eq('author_id', user.id);
+  if (error) throw error;
+  return true;
 }

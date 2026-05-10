@@ -125,12 +125,15 @@ create table if not exists public.photo_assets (
   storage_path text not null,
   thumbnail_path text,
   used_in_page_id uuid references public.completed_pages(id) on delete set null,
+  place text not null default '',
+  memo text not null default '',
   captured_at timestamptz not null default now(),
   expires_at timestamptz not null,
   deleted_at timestamptz,
   retention_days integer not null default 3,
   is_protected_by_plan boolean not null default false,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  updated_at timestamptz
 );
 
 alter table public.photo_assets
@@ -140,9 +143,12 @@ alter table public.photo_assets
   add column if not exists display_space_id uuid references public.memory_spaces(id) on delete set null,
   add column if not exists display_scope text not null default 'couple',
   add column if not exists thumbnail_path text,
+  add column if not exists place text not null default '',
+  add column if not exists memo text not null default '',
   add column if not exists expires_at timestamptz,
   add column if not exists retention_days integer not null default 3,
-  add column if not exists deleted_at timestamptz;
+  add column if not exists deleted_at timestamptz,
+  add column if not exists updated_at timestamptz;
 
 update public.photo_assets
 set space_id = coalesce(space_id, memory_space_id),

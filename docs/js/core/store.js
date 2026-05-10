@@ -114,6 +114,7 @@ function normalizeDraft(draft) {
 function normalizeRecordMemory(memory) {
   return {
     id: memory.id || createId('memory'),
+    authorId: memory.authorId || memory.author_id || '',
     imageData: memory.imageData || '',
     time: memory.time || new Date().toTimeString().slice(0, 5),
     place: memory.place || '',
@@ -126,8 +127,12 @@ function normalizeRecordMemory(memory) {
     },
     createdAt: memory.createdAt || new Date().toISOString(),
     storagePath: memory.storagePath || '',
+    thumbnailPath: memory.thumbnailPath || '',
     sourceType: memory.sourceType === 'camera' ? 'camera' : 'album',
     expiresAt: memory.expiresAt || null,
+    storageScope: memory.storageScope === 'personal' ? 'personal' : 'shared',
+    saveScope: memory.saveScope || (memory.storageScope === 'personal' ? 'personal' : 'couple'),
+    updatedAt: memory.updatedAt || null,
   };
 }
 
@@ -169,7 +174,7 @@ function normalizeState(saved) {
           planId: entry.planId || '',
     title: entry.title || 'ふたりの予定',
           date: entry.date || '2025-05-03',
-          time: entry.time || '11:00縲・3:30',
+          time: entry.time || '11:00〜13:30',
           place: entry.place || '',
           note: entry.note || '',
           image: entry.image || '',
@@ -180,7 +185,7 @@ function normalizeState(saved) {
       todos: Array.isArray(savedCouple.todos)
         ? savedCouple.todos.map((todo) => ({
           id: todo.id || createId('todo'),
-          title: todo.title || '繧・ｊ縺溘＞縺薙→',
+          title: todo.title || 'やりたいこと',
           note: todo.note || '',
           done: Boolean(todo.done),
           createdAt: todo.createdAt || new Date().toISOString(),
@@ -289,6 +294,13 @@ export function replaceRecordMemories(recordMemories = []) {
   commit(next);
 }
 
+export function deleteRecordMemory(memoryId) {
+  const next = structuredClone(state);
+  if (!next.recordMemories.some((memory) => memory.id === memoryId)) return;
+  next.recordMemories = next.recordMemories.filter((memory) => memory.id !== memoryId);
+  commit(next);
+}
+
 export function upsertDraft(draftInput) {
   const next = structuredClone(state);
   const existingIndex = next.drafts.findIndex((draft) => draft.id === draftInput.id);
@@ -339,6 +351,10 @@ export function updateRecordMemory(memoryId, updates) {
       y: Math.min(1, Math.max(0, Number(updates.pageCrop.y) || 0.5)),
       zoom: Math.max(1, Number(updates.pageCrop.zoom) || 1),
     };
+  }
+  if (updates?.storageScope === 'personal' || updates?.storageScope === 'shared') {
+    memory.storageScope = updates.storageScope;
+    memory.saveScope = updates.storageScope === 'personal' ? 'personal' : 'couple';
   }
   memory.updatedAt = new Date().toISOString();
   commit(next);
@@ -482,7 +498,7 @@ export function replaceCoupleDatabaseData({
   if (Array.isArray(todos)) {
     next.couple.todos = todos.map((todo) => ({
       id: todo.id || createId('todo'),
-      title: todo.title || '繧・ｊ縺溘＞縺薙→',
+      title: todo.title || 'やりたいこと',
       note: todo.note || '',
       done: Boolean(todo.done),
       createdAt: todo.createdAt || new Date().toISOString(),
@@ -541,7 +557,7 @@ export function addCoupleCalendarEntry(entry) {
     planId: entry.planId || '',
     title: entry.title || 'ふたりの予定',
     date: entry.date || '2025-05-03',
-    time: entry.time || '11:00縲・3:30',
+    time: entry.time || '11:00〜13:30',
     place: entry.place || '',
     note: entry.note || '',
     image: entry.image || '',
