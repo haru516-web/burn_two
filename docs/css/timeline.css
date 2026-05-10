@@ -2062,7 +2062,7 @@
 .calendar-date-popover__footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 8px;
   flex-wrap: wrap;
 }
@@ -2083,7 +2083,23 @@
   color: #a95353;
 }
 
+.calendar-date-popover__actions .calendar-date-popover__icon-button {
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.calendar-date-popover__actions .calendar-date-popover__icon-button svg,
+.calendar-date-popover__actions .calendar-date-popover__icon-button img {
+  width: 22px;
+  height: 22px;
+}
+
 .calendar-date-popover__footer {
+  justify-content: space-between;
   border-top: 1px solid rgba(83, 70, 61, 0.12);
   margin-top: 14px;
   padding-top: 14px;
@@ -2313,16 +2329,16 @@
   display: inline-flex;
   flex-wrap: nowrap;
   justify-content: flex-end;
-  gap: 7px;
-  margin-top: 6px;
+  gap: 10px;
+  margin-top: 8px;
   justify-self: end;
   align-self: end;
 }
 
 .couple-date-card-actions button {
-  width: 25px;
-  height: 25px;
-  min-height: 25px;
+  width: 38px;
+  height: 38px;
+  min-height: 38px;
   padding: 0;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.42);
@@ -2337,10 +2353,10 @@
 }
 
 .couple-date-card-actions svg {
-  width: 16px;
-  height: 16px;
-  flex: 0 0 16px;
-  stroke-width: 1.65;
+  width: 23px;
+  height: 23px;
+  flex: 0 0 23px;
+  stroke-width: 1.75;
 }
 
 .couple-selected-date-info {

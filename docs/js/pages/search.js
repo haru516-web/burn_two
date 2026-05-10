@@ -267,7 +267,6 @@ function renderCalendarDatePopup(state, uiState) {
         <div class="calendar-date-popover__head">
           <div>
             <p class="couple-kicker">${formatDateLabel(popupDate)}</p>
-            <h2>この日の予定</h2>
           </div>
           <button type="button" data-calendar-popup-close aria-label="閉じる">×</button>
         </div>
@@ -275,15 +274,14 @@ function renderCalendarDatePopup(state, uiState) {
           <div class="calendar-date-popover__list">
             ${entries.map((entry) => `
               <article class="calendar-date-popover__entry">
-                <h3>${escapeCalendarText(entry.title || 'ふたりの予定')}</h3>
+                <h3>${escapeCalendarText(entry.place || '場所未設定')}</h3>
                 <dl>
-                  <div><dt>場所</dt><dd>${escapeCalendarText(entry.place || '未設定')}</dd></div>
                   <div><dt>時間</dt><dd>${escapeCalendarText(entry.time || '未設定')}</dd></div>
+                  <div><dt>メモ</dt><dd>${escapeCalendarText(entry.note || '未設定')}</dd></div>
                 </dl>
-                ${entry.note ? `<p>${escapeCalendarText(entry.note)}</p>` : ''}
                 <div class="calendar-date-popover__actions">
-                  <button type="button" data-edit-date-entry="${entry.id}">編集</button>
-                  <button class="is-danger" type="button" data-delete-date-entry="${entry.id}">削除</button>
+                  <button class="calendar-date-popover__icon-button" type="button" data-edit-date-entry="${entry.id}" aria-label="編集">${getIcon('pencil')}</button>
+                  <button class="calendar-date-popover__icon-button is-danger" type="button" data-delete-date-entry="${entry.id}" aria-label="削除">${getIcon('trash')}</button>
                 </div>
               </article>
             `).join('')}
