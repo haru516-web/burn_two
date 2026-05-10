@@ -966,6 +966,78 @@
   gap: 12px;
 }
 
+.futari-settings-plan {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid rgba(201, 143, 147, 0.24);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 253, 249, 0.94), rgba(251, 242, 237, 0.9));
+}
+
+.futari-settings-plan__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.futari-settings-plan__head p,
+.futari-settings-plan__proposal p,
+.futari-settings-plan__renewal span {
+  margin: 0;
+  color: #8b7167;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.futari-settings-plan__head strong {
+  color: #201916;
+  font-family: "Cormorant Garamond", "Times New Roman", serif;
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+
+.futari-settings-plan__renewal {
+  display: grid;
+  gap: 5px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(226, 211, 199, 0.72);
+}
+
+.futari-settings-plan__renewal strong {
+  color: #4e3d36;
+  font-family: "Zen Old Mincho", "Noto Serif JP", serif;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.futari-settings-plan__proposal {
+  display: grid;
+  gap: 12px;
+}
+
+.futari-settings-plan__proposal button {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 14px;
+  border-radius: 999px;
+  color: #fff;
+  background: #c98592;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.futari-settings-plan__proposal button svg {
+  width: 15px;
+  height: 15px;
+}
+
 .futari-settings-list__item {
   min-height: 56px;
   display: grid;

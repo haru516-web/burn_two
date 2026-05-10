@@ -615,6 +615,11 @@ function renderPageList(state, uiState = {}) {
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const photos = (state.recordMemories || [])
     .filter((memory) => memory.imageData || memory.storagePath || memory.thumbnailPath)
+    .filter((memory) => {
+      const fallbackScope = hasPartner ? 'shared' : 'personal';
+      const memoryScope = memory.storageScope === 'personal' || memory.saveScope === 'personal' ? 'personal' : fallbackScope;
+      return memoryScope === activePhotoScope;
+    })
     .slice()
     .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
   const items = activeAlbumTab === 'photo' ? photos : posts;
@@ -627,7 +632,7 @@ function renderPageList(state, uiState = {}) {
     </header>
     <div class="couple-album-tabs" role="tablist" aria-label="アルバム表示">
       <button class="${activeAlbumTab === 'pages' ? 'is-active' : ''}" type="button" data-album-tab="pages" role="tab" aria-selected="${activeAlbumTab === 'pages'}">pages</button>
-      <button class="${activeAlbumTab === 'photo' ? 'is-active' : ''}" type="button" data-album-tab="photo" role="tab" aria-selected="${activeAlbumTab === 'photo'}">photo</button>
+      <button class="${activeAlbumTab === 'photo' ? 'is-active' : ''}" type="button" data-album-tab="photo" role="tab" aria-selected="${activeAlbumTab === 'photo'}">photos</button>
     </div>
     ${activeAlbumTab === 'pages' ? `
       <div class="couple-album-tabs" role="tablist" aria-label="ページ保存先">

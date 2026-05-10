@@ -533,6 +533,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 4px;
+  margin-bottom: 12px;
   padding: 4px;
   border: 1px solid rgba(201, 143, 147, 0.22);
   border-radius: 999px;

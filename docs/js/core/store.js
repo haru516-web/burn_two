@@ -112,6 +112,13 @@ function normalizeDraft(draft) {
 }
 
 function normalizeRecordMemory(memory) {
+  const storageScope = memory.storageScope === 'personal'
+    || memory.saveScope === 'personal'
+    || memory.displayScope === 'personal'
+    || memory.display_scope === 'personal'
+    ? 'personal'
+    : 'shared';
+
   return {
     id: memory.id || createId('memory'),
     authorId: memory.authorId || memory.author_id || '',
@@ -130,8 +137,8 @@ function normalizeRecordMemory(memory) {
     thumbnailPath: memory.thumbnailPath || '',
     sourceType: memory.sourceType === 'camera' ? 'camera' : 'album',
     expiresAt: memory.expiresAt || null,
-    storageScope: memory.storageScope === 'personal' ? 'personal' : 'shared',
-    saveScope: memory.saveScope || (memory.storageScope === 'personal' ? 'personal' : 'couple'),
+    storageScope,
+    saveScope: memory.saveScope || (storageScope === 'personal' ? 'personal' : 'couple'),
     updatedAt: memory.updatedAt || null,
   };
 }
@@ -292,6 +299,47 @@ export function replaceRecordMemories(recordMemories = []) {
     ? recordMemories.map(normalizeRecordMemory)
     : [];
   commit(next);
+}
+
+export function markAllContentPersonal() {
+  const next = structuredClone(state);
+  let changed = false;
+
+  next.posts = (next.posts || []).map((post) => {
+    const composeData = post.composeData && typeof post.composeData === 'object'
+      ? {
+          ...post.composeData,
+          storageScope: 'personal',
+          saveScope: 'personal',
+        }
+      : post.composeData;
+    if (post.storageScope === 'personal' && post.saveScope === 'personal' && composeData === post.composeData) {
+      return post;
+    }
+    changed = true;
+    return {
+      ...post,
+      storageScope: 'personal',
+      saveScope: 'personal',
+      composeData,
+      updatedAt: new Date().toISOString(),
+    };
+  });
+
+  next.recordMemories = (next.recordMemories || []).map((memory) => {
+    if (memory.storageScope === 'personal' && memory.saveScope === 'personal') return memory;
+    changed = true;
+    return {
+      ...memory,
+      storageScope: 'personal',
+      saveScope: 'personal',
+      updatedAt: new Date().toISOString(),
+    };
+  });
+
+  if (!changed) return false;
+  commit(next);
+  return true;
 }
 
 export function deleteRecordMemory(memoryId) {

@@ -2110,6 +2110,14 @@
   margin: 0;
 }
 
+.couple-home-quick__todo .futari-dashboard-todo__list {
+  justify-items: stretch;
+}
+
+.couple-home-quick__todo .futari-dashboard-todo__row {
+  width: 100%;
+}
+
 .couple-home-actions-card {
   display: grid;
   width: 86px;

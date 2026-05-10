@@ -104,7 +104,62 @@ function maskPassword() {
   return '********';
 }
 
-function renderSettingsList(uiState = {}) {
+function resolveCurrentPlan(state = {}, uiState = {}) {
+  const profile = state.profile || {};
+  const metadata = uiState.authUser?.user_metadata || {};
+  const rawPlan = profile.plan
+    || profile.subscriptionPlan
+    || profile.membershipPlan
+    || metadata.plan
+    || metadata.subscription_plan
+    || uiState.currentPlan
+    || uiState.plan
+    || 'free';
+  const normalizedPlan = String(rawPlan || 'free').trim().toLowerCase();
+  const isPlus = ['plus', 'burn_plus', 'premium', 'paid'].includes(normalizedPlan);
+  const renewalDate = profile.planRenewalDate
+    || profile.plusRenewalDate
+    || profile.subscriptionRenewalDate
+    || metadata.plan_renewal_date
+    || metadata.subscription_renewal_date
+    || '';
+  return {
+    isPlus,
+    label: isPlus ? 'BURN Plus' : 'Free',
+    renewalDate,
+  };
+}
+
+function formatPlanDate(dateString = '') {
+  const date = dateString ? new Date(dateString) : null;
+  if (!date || Number.isNaN(date.getTime())) return '未設定';
+  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+}
+
+function renderCurrentPlanBox(state = {}, uiState = {}) {
+  const plan = resolveCurrentPlan(state, uiState);
+  return `
+    <section class="futari-settings-plan">
+      <div class="futari-settings-plan__head">
+        <p>あなたのプラン</p>
+        <strong>${escapeHtml(plan.label)}</strong>
+      </div>
+      ${plan.isPlus ? `
+        <div class="futari-settings-plan__renewal">
+          <span>次回更新日</span>
+          <strong>${escapeHtml(formatPlanDate(plan.renewalDate))}</strong>
+        </div>
+      ` : `
+        <div class="futari-settings-plan__proposal">
+          <p>Plusにすると、素材保存期間やページ作成数、プレミアムテンプレートが広がります。</p>
+          <button type="button" data-open-plus-plan>plus(480円)プランを見る ${getIcon('chevronRight')}</button>
+        </div>
+      `}
+    </section>
+  `;
+}
+
+function renderSettingsList(state = {}, uiState = {}) {
   const hasPartner = Boolean(uiState.partnerProfile?.hasPartner);
   const items = [
     ['account', 'アカウント情報'],
@@ -119,6 +174,7 @@ function renderSettingsList(uiState = {}) {
         <button type="button" data-profile-settings-close aria-label="戻る">${getIcon('arrowLeft')}</button>
         <h1>設定</h1>
       </div>
+      ${renderCurrentPlanBox(state, uiState)}
       <div class="futari-settings-list">
         ${items.map(([key, label]) => {
           const isDisconnectDisabled = key === 'disconnect' && !hasPartner;
@@ -248,7 +304,7 @@ function renderSettingsScreen(state = {}, uiState = {}) {
     case 'settingsDelete':
       return renderConfirmSettings('delete', uiState.settingsConfirmStep || 1);
     default:
-      return renderSettingsList(uiState);
+      return renderSettingsList(state, uiState);
   }
 }
 
@@ -265,7 +321,6 @@ export function renderProfile(state, uiState = {}) {
   const posts = (state.posts || []).slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const anniversaryDate = state.couple?.anniversaryDate || '2025-05-15';
   const totalDates = (state.couple?.calendarEntries || []).length;
-  const todos = state.couple?.todos || [];
   const isSettings = String(uiState.profileSection || '').startsWith('settings');
 
   return `
@@ -318,19 +373,6 @@ export function renderProfile(state, uiState = {}) {
         </section>
 
         <section class="futari-dashboard-mid">
-          <section class="futari-dashboard-todo futari-dashboard-card">
-            <div class="futari-dashboard-section-head">
-              <h2>&#12420;&#12426;&#12383;&#12356;&#12371;&#12392;</h2>
-              <button type="button" data-open-todo-list aria-label="todo list">${getIcon('chevronRight')}</button>
-            </div>
-            <div class="futari-dashboard-todo__list">
-              ${renderTodoRows(todos)}
-            </div>
-            <button class="futari-dashboard-add" type="button" data-profile-open-todo-list>
-              <span>+</span>
-              &#36861;&#21152;&#12377;&#12427;
-            </button>
-          </section>
           ${renderProfileBook(state.profile || {})}
         </section>
 

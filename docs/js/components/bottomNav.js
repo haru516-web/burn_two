@@ -1,14 +1,20 @@
 import { getIcon } from './icons.js';
 
 export function renderBottomNav(screen) {
-  const activeScreen = screen === 'timeline' ? 'home' : screen;
+  const activeScreen = screen === 'timeline'
+    ? 'home'
+    : ['post', 'photo'].includes(screen)
+      ? 'search'
+      : screen === 'compose'
+        ? 'magazine'
+        : screen;
   const isHomeActive = activeScreen === 'home';
   const isAlbumActive = activeScreen === 'search';
   const isRecordActive = activeScreen === 'record';
   const isMagazineActive = activeScreen === 'magazine';
   const isProfileActive = activeScreen === 'profile';
 
-  if (!['home', 'timeline', 'search', 'record', 'magazine', 'profile'].includes(screen)) {
+  if (!['home', 'timeline', 'search', 'record', 'magazine', 'profile', 'compose', 'post', 'photo'].includes(screen)) {
     return '';
   }
 

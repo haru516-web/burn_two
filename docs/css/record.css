@@ -141,6 +141,72 @@
   font-weight: 500;
 }
 
+.record-home-album-section {
+  margin: 18px 0 0;
+}
+
+.record-home-album-section__label {
+  margin: 0 0 10px;
+  color: #74675d;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.record-home-album-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 12px;
+  align-items: start;
+  margin: 0;
+}
+
+.record-home-album-photo {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.record-home-album-photo__image {
+  display: block;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(78, 57, 51, 0.08);
+  border-radius: 0;
+  background: #f7f2ec;
+  box-shadow: 0 10px 20px rgba(77, 48, 39, 0.08);
+}
+
+.record-home-album-photo__image img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+}
+
+.record-home-album-photo .couple-album-page__meta {
+  display: block;
+  min-width: 0;
+  text-align: center;
+}
+
+.record-home-album-photo .couple-kicker {
+  margin: 0;
+  color: #74675d;
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.record-home-album-empty {
+  margin: 0;
+  padding: 18px 0 6px;
+  color: #8e7a72;
+  font-size: 13px;
+  text-align: center;
+}
+
 .record-start-card__copy p {
   margin: 0 0 20px;
   color: #514641;
@@ -189,6 +255,12 @@
   margin: 18px auto 0;
 }
 
+.record-create-page-button:disabled {
+  background: linear-gradient(180deg, #d9d2ce, #bfb6b1);
+  box-shadow: none;
+  filter: grayscale(0.2);
+}
+
 .record-section {
   margin-top: 32px;
 }
@@ -224,18 +296,23 @@
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
   border: 0;
-  background: transparent;
+  background: rgba(180, 106, 98, 0.1);
   color: #b46a62;
   font-family: "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", serif;
-  font-size: 0.92rem;
+  font-size: 0.82rem;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .record-section__action svg {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
 }
 
 .record-empty-text {
@@ -1224,49 +1301,50 @@
 
 .record-select-list {
   display: grid;
-  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 12px;
+  align-items: start;
   margin-top: 20px;
   padding-bottom: 24px;
 }
 
 .record-select-card {
   position: relative;
+  min-width: 0;
   width: 100%;
+  display: grid;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .record-select-card__toggle {
-  display: grid;
-  grid-template-columns: minmax(118px, 34%) 1fr 48px;
-  gap: 18px;
-  align-items: center;
+  position: relative;
+  display: block;
   width: 100%;
-  min-height: 146px;
-  padding: 10px 14px 10px 10px;
-  border-radius: 8px;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(78, 57, 51, 0.08);
+  border-radius: 0;
+  background: #f7f2ec;
+  box-shadow: 0 12px 24px rgba(77, 48, 39, 0.1);
   color: inherit;
-  text-align: left;
   cursor: pointer;
 }
 
-.record-select-card__image {
-  height: 126px;
-  justify-self: start;
-  border-radius: 6px;
+.record-select-card .record-select-card__image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  height: auto;
+  border-radius: 0;
   object-fit: cover;
 }
 
-.record-select-card__image--landscape {
-  aspect-ratio: 1.183;
-}
-
-.record-select-card__image--portrait {
-  aspect-ratio: 0.772;
-}
-
 .record-select-card__order {
-  position: absolute;
-  right: 12px;
-  top: 10px;
+  justify-self: center;
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -1303,6 +1381,10 @@
 
 .record-select-card__copy {
   min-width: 0;
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  text-align: center;
 }
 
 .record-select-card__copy strong {
@@ -1338,15 +1420,15 @@
 }
 
 .record-select-card__copy p {
-  margin-top: 16px;
-  color: #4f4540;
-  font-size: clamp(0.9rem, 3.4vw, 1rem);
-  line-height: 1.75;
+  margin: 0;
+  color: #74675d;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .record-select-card em {
   display: inline-flex;
-  margin-top: 10px;
+  margin-top: 0;
   padding: 4px 12px;
   border-radius: 4px;
   color: #b66a62;
@@ -1356,24 +1438,28 @@
 }
 
 .record-select-card__check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
-  border: 1px solid rgba(76, 58, 51, 0.32);
-  border-radius: 999px;
+  width: 30px;
+  height: 30px;
+  border: 1.4px solid rgba(201, 143, 147, 0.72);
+  border-radius: 10px;
   color: #fff;
-  justify-self: center;
+  background: rgba(255, 253, 249, 0.88);
+  box-shadow: 0 6px 14px rgba(77, 48, 39, 0.12);
 }
 
 .record-select-card.is-selected .record-select-card__check {
-  border-color: #b66a62;
-  background: #b66a62;
+  border-color: #c98f93;
+  background: #c98f93;
 }
 
 .record-select-card__check svg {
-  width: 24px;
-  height: 24px;
+  width: 19px;
+  height: 19px;
 }
 
 .record-template-picker {
@@ -2161,14 +2247,12 @@
   }
 
   .record-select-card__toggle {
-    grid-template-columns: minmax(104px, 34%) 1fr 36px;
-    min-height: 118px;
-    gap: 12px;
-    padding: 8px 10px 8px 8px;
+    min-height: 0;
+    padding: 0;
   }
 
   .record-select-card__image {
-    height: 104px;
+    height: auto;
   }
 
   .record-select-card__copy strong {
@@ -2177,19 +2261,18 @@
   }
 
   .record-select-card__copy p {
-    margin-top: 10px;
     font-size: 0.86rem;
-    line-height: 1.65;
+    line-height: 1.45;
   }
 
   .record-select-card__check {
-    width: 34px;
-    height: 34px;
+    width: 30px;
+    height: 30px;
   }
 
   .record-select-card__check svg {
-    width: 20px;
-    height: 20px;
+    width: 19px;
+    height: 19px;
   }
 
   .record-template-picker__head {

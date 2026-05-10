@@ -1,7 +1,7 @@
 import { renderBottomNav } from './components/bottomNav.js';
 import { renderCommentsModal } from './components/modals.js';
 import { getIcon } from './components/icons.js';
-import { getState, switchStateScope, addPost, upsertPostCache, replaceCompletedPostCache, replaceRecordMemories, replaceCoupleDatabaseData, updatePost, deletePost, toggleLike, toggleSave, addComment, addImpression, updateProfile, updateCoupleSettings, toggleFollow, saveIssue, upsertDraft, deleteDraft, addRecordMemory, updateRecordMemory, deleteRecordMemory, updateCoupleAnswer, addCoupleCalendarEntry, updateCoupleCalendarEntry, deleteCoupleCalendarEntry, resetCoupleAnswers, toggleCoupleTodo, addCoupleTodo, deleteCoupleTodo } from './core/store.js';
+import { getState, switchStateScope, addPost, upsertPostCache, replaceCompletedPostCache, replaceRecordMemories, replaceCoupleDatabaseData, markAllContentPersonal, updatePost, deletePost, toggleLike, toggleSave, addComment, addImpression, updateProfile, updateCoupleSettings, toggleFollow, saveIssue, upsertDraft, deleteDraft, addRecordMemory, updateRecordMemory, deleteRecordMemory, updateCoupleAnswer, addCoupleCalendarEntry, updateCoupleCalendarEntry, deleteCoupleCalendarEntry, resetCoupleAnswers, toggleCoupleTodo, addCoupleTodo, deleteCoupleTodo } from './core/store.js';
 import { renderOpening } from './pages/opening.js';
 import { renderInvite } from './pages/invite.js';
 import { renderHome, renderTimeline } from './pages/timeline.js';
@@ -649,6 +649,13 @@ function renderAuthScreen() {
 
 function getPageHtml() {
   const state = getState();
+  if (!uiState.partnerProfile?.hasPartner) {
+    uiState.albumPageScope = 'personal';
+    uiState.albumPhotoScope = 'personal';
+    uiState.composeSaveScope = 'personal';
+    uiState.recordSaveScope = 'personal';
+    markAllContentPersonal();
+  }
   switch (uiState.screen) {
     case 'home':
       return renderHome(state, uiState);
@@ -712,9 +719,28 @@ function isOwnPhoto(photo) {
   return true;
 }
 
+function getDefaultStorageScope() {
+  return uiState.partnerProfile?.hasPartner ? 'shared' : 'personal';
+}
+
+function resolveStorageScope(scope) {
+  if (!uiState.partnerProfile?.hasPartner) return 'personal';
+  return scope === 'personal' ? 'personal' : 'shared';
+}
+
+function resolvePhotoStorageScope(photo) {
+  return photo?.storageScope === 'personal'
+    || photo?.saveScope === 'personal'
+    || photo?.displayScope === 'personal'
+    || photo?.display_scope === 'personal'
+    ? 'personal'
+    : getDefaultStorageScope();
+}
+
 function renderPhotoDetail(state, ui = uiState) {
   const photos = getAlbumPhotosForDetail(state);
   const activePhoto = photos.find((photo) => photo.id === ui.previewPhotoId) || photos[0] || null;
+  const hasPartner = Boolean(ui.partnerProfile?.hasPartner);
   if (!activePhoto) {
     return `
       <section class="page page--post-detail page--photo-detail">
@@ -722,7 +748,7 @@ function renderPhotoDetail(state, ui = uiState) {
           <button class="post-detail-topbar__button" type="button" data-close-photo-detail aria-label="Back">
             ${getIcon('returnLeft')}
           </button>
-          <strong class="post-detail-topbar__title">photo</strong>
+          <strong class="post-detail-topbar__title">photos</strong>
           <span class="post-detail-topbar__spacer" aria-hidden="true"></span>
         </header>
         <section class="empty-panel">
@@ -737,7 +763,7 @@ function renderPhotoDetail(state, ui = uiState) {
         <button class="post-detail-topbar__button" type="button" data-close-photo-detail aria-label="Back">
           ${getIcon('returnLeft')}
         </button>
-        <strong class="post-detail-topbar__title">photo</strong>
+        <strong class="post-detail-topbar__title">photos</strong>
         <span class="post-detail-topbar__spacer" aria-hidden="true"></span>
       </header>
       <div class="post-detail-feed">
@@ -747,7 +773,7 @@ function renderPhotoDetail(state, ui = uiState) {
           const memoText = escapeHtml(String(photo.memo || '').trim());
           const canManagePhoto = isOwnPhoto(photo);
           const authorName = escapeHtml(String(photo.authorName || state.profile?.name || 'you').trim() || 'you');
-          const activeStorageScope = photo.storageScope === 'personal' ? 'personal' : 'shared';
+          const activeStorageScope = resolvePhotoStorageScope(photo);
           const isEditing = ui.photoEditingId === photo.id;
           return `
             <article class="post-detail-card post-detail-card--photo" ${photo.id === activePhoto.id ? 'data-photo-detail-active' : ''}>
@@ -759,12 +785,12 @@ function renderPhotoDetail(state, ui = uiState) {
                 </div>
                 ${canManagePhoto ? `
                   <div class="post-detail-card__owner-controls">
-                    <div class="post-detail-card__scope-switch" role="tablist" aria-label="表示先">
-                      <button class="${activeStorageScope === 'shared' ? 'is-active' : ''}" type="button" data-photo-detail-move-scope="${photo.id}" data-photo-detail-move-target="shared" role="tab" aria-selected="${activeStorageScope === 'shared'}" ${activeStorageScope === 'shared' ? 'disabled' : ''}>共有</button>
-                      <button class="${activeStorageScope === 'personal' ? 'is-active' : ''}" type="button" data-photo-detail-move-scope="${photo.id}" data-photo-detail-move-target="personal" role="tab" aria-selected="${activeStorageScope === 'personal'}" ${activeStorageScope === 'personal' ? 'disabled' : ''}>個人</button>
+                    <div class="post-detail-card__scope-switch" role="tablist" aria-label="保存先">
+                      <button class="${activeStorageScope === 'shared' ? 'is-active' : ''}${!hasPartner ? ' is-disabled' : ''}" type="button" data-photo-detail-move-scope="${photo.id}" data-photo-detail-move-target="shared" role="tab" aria-selected="${activeStorageScope === 'shared'}" ${activeStorageScope === 'shared' || !hasPartner ? 'disabled aria-disabled="true"' : ''}>共有写真</button>
+                      <button class="${activeStorageScope === 'personal' ? 'is-active' : ''}" type="button" data-photo-detail-move-scope="${photo.id}" data-photo-detail-move-target="personal" role="tab" aria-selected="${activeStorageScope === 'personal'}" ${activeStorageScope === 'personal' ? 'disabled' : ''}>個人写真</button>
                     </div>
                     <button class="post-detail-card__delete-button" type="button" data-edit-photo-detail="${photo.id}" aria-label="写真情報を編集">
-                      ${getIcon('edit')}
+                      ${getIcon('pencil')}
                     </button>
                     <button class="post-detail-card__delete-button" type="button" data-delete-photo-detail="${photo.id}" aria-label="写真を削除">
                       ${getIcon('trash')}
@@ -1042,7 +1068,8 @@ function renderShell() {
   const screenAreaClasses = ['screen-area'];
   const themeName = resolveHomeTheme();
   const isRecordCameraStage = uiState.screen === 'record' && uiState.recordStage === 'camera';
-  const hasBottomNav = ['home', 'timeline', 'search', 'record', 'magazine', 'profile'].includes(uiState.screen) && !isRecordCameraStage;
+  const bottomNavScreens = ['home', 'timeline', 'search', 'record', 'magazine', 'profile', 'compose', 'post', 'photo'];
+  const hasBottomNav = bottomNavScreens.includes(uiState.screen) && !isRecordCameraStage;
 
   shellClasses.push(`app-shell--theme-${themeName}`);
   shellClasses.push('app-shell--theme-mode-light');
@@ -1214,11 +1241,13 @@ function renderScreen() {
   const screenArea = document.getElementById('screenArea');
   if (!screenArea) return;
   const isRecordCameraStage = uiState.screen === 'record' && uiState.recordStage === 'camera';
+  const bottomNavScreens = ['home', 'timeline', 'search', 'record', 'magazine', 'profile', 'compose', 'post', 'photo'];
+  const hasBottomNav = bottomNavScreens.includes(uiState.screen) && !isRecordCameraStage;
   const shell = screenArea.closest('.app-shell');
   shell?.classList.toggle('app-shell--record-camera', isRecordCameraStage);
-  shell?.classList.toggle('app-shell--with-bottom-nav', !isRecordCameraStage && ['home', 'timeline', 'search', 'record', 'magazine', 'profile'].includes(uiState.screen));
+  shell?.classList.toggle('app-shell--with-bottom-nav', hasBottomNav);
   screenArea.classList.toggle('screen-area--record-camera', isRecordCameraStage);
-  screenArea.classList.toggle('screen-area--with-bottom-nav', !isRecordCameraStage && ['home', 'timeline', 'search', 'record', 'magazine', 'profile'].includes(uiState.screen));
+  screenArea.classList.toggle('screen-area--with-bottom-nav', hasBottomNav);
   if (!(uiState.screen === 'record' && uiState.recordStage === 'camera' && !uiState.recordDraft?.imageData)) {
     stopRecordCameraStream();
   }
@@ -2853,8 +2882,9 @@ function bindSearchEvents() {
 
   document.querySelectorAll('[data-list-back]').forEach((button) => {
     button.addEventListener('click', () => {
+      const returnHome = uiState.coupleView === 'todoList';
       uiState.coupleView = 'calendar';
-      uiState.screen = 'profile';
+      uiState.screen = returnHome ? 'home' : 'profile';
       render();
     });
   });
@@ -8274,8 +8304,9 @@ async function applyRecordAlbumFile(file) {
   if (!file) return;
   const imageData = await fileToWebpDataUrl(file, { maxWidth: 1600, quality: 0.88 });
   const image = await loadCanvasImage(imageData);
+  const inferredFrame = image && image.naturalHeight > image.naturalWidth ? 'portrait' : 'landscape';
   const filteredImageData = image
-    ? drawFilteredImageToCanvas(image, uiState.recordDraft?.filter || 'none')
+    ? drawFilteredImageToCanvas(image, uiState.recordDraft?.filter || 'none', inferredFrame)
     : imageData;
   const now = new Date();
   uiState.recordDraft = {
@@ -8284,7 +8315,7 @@ async function applyRecordAlbumFile(file) {
     sourceType: 'album',
     filter: 'none',
     reviewConfirmed: false,
-    frame: uiState.recordDraft?.frame === 'portrait' ? 'portrait' : 'landscape',
+    frame: inferredFrame,
     time: uiState.recordDraft?.time || now.toTimeString().slice(0, 5),
     place: uiState.recordDraft?.place || '',
     memo: uiState.recordDraft?.memo || '',
@@ -8885,7 +8916,7 @@ async function saveRecordGeneratedPage({
     recordPhotoFeather: uiState.recordPhotoFeather !== false,
     createdAt: recordCreatedAt,
     title,
-    storageScope: uiState.recordSaveScope || 'shared',
+    storageScope: resolveStorageScope(uiState.recordSaveScope),
   };
 
   if (localOnly) {
@@ -8898,7 +8929,7 @@ async function saveRecordGeneratedPage({
       imageData,
       fixedTags: ['record'],
       freeTags: [],
-      storageScope: uiState.recordSaveScope || 'shared',
+      storageScope: resolveStorageScope(uiState.recordSaveScope),
       likes: 0,
       saves: 0,
       comments: [],
@@ -8923,7 +8954,7 @@ async function saveRecordGeneratedPage({
         fixedTags: ['record'],
         freeTags: [],
         createdAt: recordCreatedAt,
-        storageScope: uiState.recordSaveScope || 'shared',
+        storageScope: resolveStorageScope(uiState.recordSaveScope),
       });
     } catch (error) {
       console.warn('Failed to save record page to Supabase. Falling back to localStorage.', error);
@@ -8938,7 +8969,7 @@ async function saveRecordGeneratedPage({
       imageData,
       fixedTags: ['record'],
       freeTags: [],
-      storageScope: uiState.recordSaveScope || 'shared',
+      storageScope: resolveStorageScope(uiState.recordSaveScope),
       createdAt: recordCreatedAt,
       composeData,
       });
@@ -9031,6 +9062,8 @@ async function postRecordGeneratedPageWithOverlay() {
 }
 
 function bindRecordEvents() {
+  bindPostInteractions(document.getElementById('screenArea'));
+
   if (uiState.recordStage === 'camera' && !uiState.recordDraft?.imageData) {
     startRecordCameraStream();
   } else {
@@ -9176,7 +9209,7 @@ function bindRecordEvents() {
       place: document.querySelector('[data-record-place]')?.value || draft.place || '',
       memo: document.querySelector('[data-record-memo]')?.value || draft.memo || '',
       sourceType: draft.sourceType || 'album',
-      storageScope: uiState.recordSaveScope || 'shared',
+      storageScope: resolveStorageScope(uiState.recordSaveScope),
     };
     let saved = null;
     try {
@@ -9490,10 +9523,14 @@ function bindProfileEvents() {
           uiState.albumTab = 'pages';
           uiState.albumPageScope = 'personal';
           uiState.albumPhotoScope = 'personal';
+          uiState.composeSaveScope = 'personal';
+          uiState.recordSaveScope = 'personal';
+          markAllContentPersonal();
           await Promise.all([
             syncPhotoAssetsForCurrentConnection('personal'),
             syncAlbumPagesForCurrentConnection('personal'),
           ]);
+          markAllContentPersonal();
           uiState.profileSection = 'settings';
           uiState.settingsConfirmStep = 1;
           renderScreen();
@@ -10089,7 +10126,9 @@ function bindPhotoDetailEvents() {
   document.querySelectorAll('[data-photo-detail-move-scope]').forEach((button) => {
     button.addEventListener('click', async () => {
       const photoId = button.dataset.photoDetailMoveScope;
-      const targetScope = button.dataset.photoDetailMoveTarget === 'personal' ? 'personal' : 'shared';
+      const requestedScope = button.dataset.photoDetailMoveTarget === 'personal' ? 'personal' : 'shared';
+      const targetScope = resolveStorageScope(requestedScope);
+      if (requestedScope === 'shared' && targetScope !== 'shared') return;
       if (!photoId || button.disabled) return;
       button.disabled = true;
       updateRecordMemory(photoId, { storageScope: targetScope });

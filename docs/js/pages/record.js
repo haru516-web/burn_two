@@ -103,12 +103,35 @@ function renderRecordPreviewCard(memories) {
   `;
 }
 
+function renderRecordHomeAlbumPhotos(albumPhotos = []) {
+  const photos = albumPhotos
+    .filter((memory) => memory?.imageData)
+    .slice(0, 6);
+  return `
+    <section class="record-home-album-section" aria-label="album photos">
+      <p class="record-home-album-section__label">photos</p>
+      ${photos.length ? `
+        <div class="record-home-album-grid">
+          ${photos.map((memory) => `
+            <article class="record-home-album-photo couple-album-page couple-album-page--photo">
+              <button class="record-home-album-photo__image couple-album-page__image" type="button" data-open-photo-preview="${memory.id}" aria-label="写真を開く">
+                <img src="${memory.imageData}" alt="" />
+              </button>
+              <div class="couple-album-page__meta">
+                <p class="couple-kicker">${new Date(memory.createdAt || Date.now()).toLocaleDateString('ja-JP').replace(/\//g, '.')}</p>
+              </div>
+            </article>
+          `).join('')}
+        </div>
+      ` : '<p class="record-home-album-empty">No photos yet.</p>'}
+    </section>
+  `;
+}
+
 function renderRecordHome(memories, recordDate = '') {
   const todayKey = getTodayDateKey();
   const yesterdayKey = addDaysToDateKey(todayKey, -1);
   const activeDate = recordDate || todayKey;
-  const dateLabel = formatTodayLabel(getDateFromKey(activeDate));
-  const sectionTitle = recordDate ? '選択した日の思い出' : '今日の思い出';
   return `
     <section class="record-page record-page--home">
       <header class="record-header">
@@ -127,18 +150,10 @@ function renderRecordHome(memories, recordDate = '') {
           <button class="record-primary-button" type="button" data-record-open-camera>
             ${getIcon('camera')} カメラを起動
           </button>
+          <button class="record-primary-button record-create-page-button" type="button" data-record-stage="select" ${memories.length ? '' : 'disabled aria-disabled="true"'}>${getIcon('bookOpen')} &#12506;&#12540;&#12472;&#12434;&#20316;&#12427;</button>
         </div>
       </section>
-
-      <section class="record-section">
-        <div class="record-section__head">
-          <h2>${getIcon('clock')} ${sectionTitle}</h2>
-        </div>
-        <p class="record-selected-date-label">${dateLabel}</p>
-        ${renderMemoryCards(memories)}
-        ${memories.length ? `<button class="record-primary-button record-create-page-button" type="button" data-record-stage="select">${getIcon('bookOpen')} ページを作る</button>` : ''}
-        ${memories.length ? '' : '<p class="record-empty-text">この日の思い出はまだありません。</p>'}
-      </section>
+      ${renderRecordHomeAlbumPhotos(memories)}
 
     </section>
   `;
@@ -340,34 +355,32 @@ function renderRecordSelect(memories, selectedIds, selectedTemplateId = DEFAULT_
   return `
     <section class="record-page record-page--select">
       <header class="record-stack-header">
-        <button class="record-select-back" type="button" data-record-back-home aria-label="戻る">${getIcon('returnLeft')}</button>
+        <button class="record-select-back" type="button" data-record-back-home aria-label="&#25147;&#12427;">${getIcon('returnLeft')}</button>
         <p class="record-select-date">${formatTodayLabel()}</p>
-        <div class="record-select-rule"><span></span><i>♡</i><span></span></div>
-        <p class="record-select-lead">使いたい写真を選択</p>
+        <div class="record-select-rule"><span></span><i>&#9825;</i><span></span></div>
+        <p class="record-select-lead">&#20889;&#30495;&#12434;3&#26522;&#36984;&#25246;</p>
       </header>
 
       <div class="record-select-list">
         ${orderedMemories.map((memory) => {
           const isSelected = selected.has(memory.id);
           const selectedIndex = orderedSelectedIds.indexOf(memory.id);
-          const frame = memory.frame === 'portrait' ? 'portrait' : 'landscape';
-          const frameLabel = frame === 'portrait' ? '縦画像' : '横画像';
+          const frameLabel = memory.frame === 'portrait' ? '&#32294;&#30011;&#20687;' : '&#27178;&#30011;&#20687;';
           return `
             <article class="record-select-card ${isSelected ? 'is-selected' : ''}">
-              <button class="record-select-card__toggle" type="button" data-record-toggle-memory="${memory.id}">
-              <img class="record-select-card__image record-select-card__image--${frame}" src="${memory.imageData}" alt="" />
-              <div class="record-select-card__copy">
-                <strong><time>${escapeHtml(memory.time)}</time><span>${getIcon('pin')} ${escapeHtml(memory.place || '場所未設定')}</span></strong>
-                <p>${escapeHtml(frameLabel)}</p>
-                ${selectedIndex === 0 ? '<em>メイン写真</em>' : ''}
-              </div>
-              <span class="record-select-card__check">${isSelected ? getIcon('check') : ''}</span>
+              <button class="record-select-card__toggle" type="button" data-record-toggle-memory="${memory.id}" aria-pressed="${isSelected}">
+                ${memory.imageData ? `<img class="record-select-card__image" src="${memory.imageData}" alt="" />` : '<span class="record-select-card__image-placeholder">photo</span>'}
+                <span class="record-select-card__check" aria-hidden="true">${isSelected ? getIcon('check') : ''}</span>
               </button>
+              <div class="record-select-card__copy">
+                <p class="record-select-card__date">${frameLabel}</p>
+                ${selectedIndex === 0 ? '<em>&#12513;&#12452;&#12531;&#20889;&#30495;</em>' : ''}
+              </div>
               ${isSelected ? `
                 <div class="record-select-card__order" aria-label="photo order">
-                  <button type="button" data-record-move-memory="${memory.id}" data-record-move-direction="-1" ${selectedIndex <= 0 ? 'disabled' : ''}>↑</button>
+                  <button type="button" data-record-move-memory="${memory.id}" data-record-move-direction="-1" ${selectedIndex <= 0 ? 'disabled' : ''}>&#8593;</button>
                   <span>${selectedIndex + 1}</span>
-                  <button type="button" data-record-move-memory="${memory.id}" data-record-move-direction="1" ${selectedIndex >= selectedMemories.length - 1 ? 'disabled' : ''}>↓</button>
+                  <button type="button" data-record-move-memory="${memory.id}" data-record-move-direction="1" ${selectedIndex >= selectedMemories.length - 1 ? 'disabled' : ''}>&#8595;</button>
                 </div>
               ` : ''}
             </article>
@@ -380,8 +393,8 @@ function renderRecordSelect(memories, selectedIds, selectedTemplateId = DEFAULT_
       ${renderRecordPhotoEdgePicker(photoFeather)}
 
       <div class="record-create-bar">
-        <p>選択中 <strong>${selected.size}</strong> / 3 枚</p>
-        <button class="record-primary-button" type="button" data-record-create-page ${selected.size === 3 ? '' : 'disabled'}>ページを自動作成</button>
+        <p>&#36984;&#25246;&#20013; <strong>${selected.size}</strong> / 3 &#26522;</p>
+        <button class="record-primary-button" type="button" data-record-create-page ${selected.size === 3 ? '' : 'disabled'}>&#12506;&#12540;&#12472;&#12434;&#33258;&#21205;&#20316;&#25104;</button>
       </div>
     </section>
   `;
