@@ -1905,6 +1905,39 @@
   background: #ead8c5;
 }
 
+.couple-calendar__day.is-anniversary,
+.couple-calendar__day.is-birthday {
+  color: #2f2823;
+}
+
+.couple-calendar__day.is-anniversary::before,
+.couple-calendar__day.is-birthday::before {
+  top: 50%;
+  width: auto;
+  height: auto;
+  background: transparent;
+  clip-path: none;
+  font-family: 'Zen Old Mincho', 'Noto Serif JP', serif;
+  line-height: 1;
+}
+
+.couple-calendar__day.is-anniversary::before {
+  content: '☆';
+  color: rgba(201, 143, 147, 0.9);
+  font-size: 36px;
+}
+
+.couple-calendar__day.is-birthday::before {
+  content: '🎂';
+  font-size: 28px;
+  opacity: 0.86;
+}
+
+.couple-calendar__day.is-today.is-anniversary::before,
+.couple-calendar__day.is-today.is-birthday::before {
+  background: transparent;
+}
+
 .calendar-date-popover {
   position: fixed;
   inset: 0;

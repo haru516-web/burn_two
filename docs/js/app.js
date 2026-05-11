@@ -9653,10 +9653,9 @@ function bindProfileEvents() {
     });
   });
 
-  document.querySelectorAll('[data-profile-mission-open]').forEach((button) => {
+  document.querySelectorAll('[data-profile-magazine-open]').forEach((button) => {
     button.addEventListener('click', () => {
-      uiState.coupleView = 'missionList';
-      uiState.screen = 'search';
+      uiState.screen = 'magazine';
       render();
     });
   });

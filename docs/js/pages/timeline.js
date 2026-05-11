@@ -174,10 +174,17 @@ function renderCalendarDynamic(state = {}, selectedDate = '') {
   const monthDate = selectedDate || nextEntry?.date || getTodayDateKey();
   const calendarDays = buildCalendarDays(monthDate);
   const todayDate = getTodayDateKey();
-  const markedDates = new Map(getCalendarEntriesWithSpecialDates(state, monthDate).map((entry, index) => [
-    entry.date,
-    index % 2 === 0 ? 'rose' : 'sand',
-  ]));
+  const markedDates = new Map();
+  getCalendarEntriesWithSpecialDates(state, monthDate).forEach((entry, index) => {
+    const current = markedDates.get(entry.date);
+    if (entry.specialDateType === 'birthday') {
+      markedDates.set(entry.date, 'birthday');
+    } else if (entry.specialDateType === 'anniversary' && current !== 'birthday') {
+      markedDates.set(entry.date, 'anniversary');
+    } else if (!current) {
+      markedDates.set(entry.date, index % 2 === 0 ? 'rose' : 'sand');
+    }
+  });
   return `
     <section class="couple-card couple-calendar-card" aria-label="カレンダー">
       <div class="couple-section-head">

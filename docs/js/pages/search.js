@@ -191,7 +191,17 @@ function renderCalendarGrid(state, uiState) {
   const selectedDate = uiState.selectedCalendarDate || getTodayDateKey();
   const entries = getCalendarEntriesWithSpecialDates(state, selectedDate);
   const postDates = new Set((state.posts || []).map((post) => getPostDateKey(post)).filter(Boolean));
-  const entryDates = new Set(entries.map((entry) => entry.date));
+  const markedDates = new Map();
+  entries.forEach((entry) => {
+    const current = markedDates.get(entry.date);
+    if (entry.specialDateType === 'birthday') {
+      markedDates.set(entry.date, 'birthday');
+    } else if (entry.specialDateType === 'anniversary' && current !== 'birthday') {
+      markedDates.set(entry.date, 'anniversary');
+    } else if (!current) {
+      markedDates.set(entry.date, 'rose');
+    }
+  });
   const todayDate = getTodayDateKey();
   const calendarDays = buildCalendarDays(selectedDate, 1);
 
@@ -209,12 +219,12 @@ function renderCalendarGrid(state, uiState) {
         ${['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map((day) => `<span class="couple-calendar__dow">${day}</span>`).join('')}
         ${calendarDays.map((calendarDay) => {
           const date = calendarDay.date;
-          const hasEntry = entryDates.has(date);
+          const mark = markedDates.get(date);
           const hasPage = postDates.has(date);
           const isTodayInActiveMonth = !calendarDay.inactive && date === todayDate;
           return `
             <button
-              class="couple-calendar__day ${calendarDay.inactive ? 'is-muted' : ''} ${hasEntry ? 'is-marked is-rose' : ''} ${hasPage ? 'has-page' : ''} ${isTodayInActiveMonth ? 'is-today' : ''} ${date === selectedDate ? 'is-selected' : ''}"
+              class="couple-calendar__day ${calendarDay.inactive ? 'is-muted' : ''} ${mark ? `is-marked is-${mark}` : ''} ${hasPage ? 'has-page' : ''} ${isTodayInActiveMonth ? 'is-today' : ''} ${date === selectedDate ? 'is-selected' : ''}"
               type="button"
               data-calendar-date="${date}"
             >${calendarDay.day}</button>
