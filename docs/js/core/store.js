@@ -523,6 +523,7 @@ export function replaceCoupleDatabaseData({
   calendarEntries,
   todos,
   profileSheet,
+  coupleSettings,
 } = {}) {
   const next = structuredClone(state);
   next.couple = next.couple || structuredClone(defaultState.couple);
@@ -558,6 +559,12 @@ export function replaceCoupleDatabaseData({
     if (profileSheet.name) {
       next.profile.name = String(profileSheet.name).trim() || next.profile.name;
     }
+  }
+
+  if (coupleSettings && typeof coupleSettings === 'object') {
+    next.couple.anniversaryDate = String(coupleSettings.anniversaryDate || '').trim()
+      || next.couple.anniversaryDate
+      || defaultState.couple.anniversaryDate;
   }
 
   commit(next);

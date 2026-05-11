@@ -898,6 +898,32 @@ function renderProfileBook(state) {
   `;
 }
 
+const MISSION_PATTERN_ONE = [
+  '&#12484;&#12540;&#12471;&#12519;&#12483;&#12488;&#20889;&#30495;&#12434;&#25774;&#12427;',
+  '&#20889;&#30495;&#12434;5&#26522;&#20197;&#19978;&#25774;&#12427;',
+  '&#30456;&#25163;&#12398;&#22909;&#12365;&#12394;&#12392;&#12371;&#12429;&#12434;&#19977;&#12388;&#20253;&#12360;&#12427;',
+];
+
+function renderMissionListPage() {
+  return `
+    ${renderBrand()}
+    <button class="couple-list-back" type="button" data-list-back>${getIcon('returnLeft')} &#25147;&#12427;</button>
+    <header class="couple-page-title">
+      <h1>&#12511;&#12483;&#12471;&#12519;&#12531;&#12522;&#12473;&#12488;</h1>
+    </header>
+    <section class="couple-date-list-page couple-mission-page">
+      <div class="couple-card couple-mission-card">
+        ${MISSION_PATTERN_ONE.map((mission, index) => `
+          <div class="couple-mission-card__row">
+            <span>${index + 1}</span>
+            <p>${mission}</p>
+          </div>
+        `).join('')}
+      </div>
+    </section>
+  `;
+}
+
 function renderQuestionOption(question, option, selectedValue) {
   return `
     <button
@@ -1021,7 +1047,9 @@ export function renderSearch(state, uiState = {}) {
                 ? renderTodoList(state, uiState)
                 : view === 'profileBook'
                   ? renderProfileBook(state)
-                  : renderCalendar(state, uiState);
+                  : view === 'missionList'
+                    ? renderMissionListPage()
+                    : renderCalendar(state, uiState);
 
   return `
     <section class="page page--search couple-calendar-page ${view === 'profileBook' ? 'couple-calendar-page--profile-book' : ''}">

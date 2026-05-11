@@ -58,6 +58,14 @@ function renderTodoRows(todos) {
   }).join('');
 }
 
+function getTodayDateKey() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const date = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${date}`;
+}
+
 function renderProfileBook(profile = {}, isOpen = false) {
   const name = String(profile.name || 'you').trim() || 'you';
   return `
@@ -65,6 +73,33 @@ function renderProfileBook(profile = {}, isOpen = false) {
       <button class="futari-dashboard-profile-book__button" type="button" data-profile-book-open>
         <img src="./image/profile_sheets/profile_sheet1.png" alt="" />
         <strong>${escapeHtml(name)}の記録</strong>
+      </button>
+    </section>
+  `;
+}
+
+const missionPatternOne = [
+  '&#12484;&#12540;&#12471;&#12519;&#12483;&#12488;&#20889;&#30495;&#12434;&#25774;&#12427;',
+  '&#20889;&#30495;&#12434;5&#26522;&#20197;&#19978;&#25774;&#12427;',
+  '&#30456;&#25163;&#12398;&#22909;&#12365;&#12394;&#12392;&#12371;&#12429;&#12434;&#19977;&#12388;&#20253;&#12360;&#12427;',
+];
+
+function renderMissionList() {
+  return `
+    <section class="futari-dashboard-mission futari-dashboard-card">
+      <button class="futari-dashboard-mission__button" type="button" data-profile-mission-open>
+        <span class="futari-dashboard-section-head">
+          <span class="futari-dashboard-mission__title">&#12511;&#12483;&#12471;&#12519;&#12531;&#12522;&#12473;&#12488;</span>
+          ${getIcon('chevronRight')}
+        </span>
+        <span class="futari-dashboard-todo__list futari-dashboard-mission__list">
+          ${missionPatternOne.map((mission, index) => `
+            <span class="futari-dashboard-todo__row futari-dashboard-mission__row">
+              <span class="futari-dashboard-todo__check futari-dashboard-mission__number" aria-hidden="true">${index + 1}</span>
+              <span class="futari-dashboard-todo__title">${mission}</span>
+            </span>
+          `).join('')}
+        </span>
       </button>
     </section>
   `;
@@ -321,6 +356,7 @@ export function renderProfile(state, uiState = {}) {
   const posts = (state.posts || []).slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const anniversaryDate = state.couple?.anniversaryDate || '2025-05-15';
   const totalDates = (state.couple?.calendarEntries || []).length;
+  const hasTodayDate = (state.couple?.calendarEntries || []).some((entry) => entry.date === getTodayDateKey());
   const isSettings = String(uiState.profileSection || '').startsWith('settings');
 
   return `
@@ -374,6 +410,7 @@ export function renderProfile(state, uiState = {}) {
 
         <section class="futari-dashboard-mid">
           ${renderProfileBook(state.profile || {})}
+          ${hasTodayDate ? renderMissionList() : ''}
         </section>
 
         <section class="futari-dashboard-plus futari-dashboard-card">

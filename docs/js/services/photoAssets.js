@@ -2,7 +2,8 @@ import { ensureProfileAndMemorySpace } from './completedPages.js';
 import { requireSupabase } from './supabase.js';
 
 const PHOTO_BUCKET = 'photo-assets';
-const RETENTION_DAYS = 3;
+const PHOTO_EXPIRY_RETENTION_DAYS = 1;
+const PHOTO_EXPIRY_TIME_ZONE = 'Asia/Tokyo';
 
 function dataUrlToBlob(dataUrl) {
   const [meta, content] = String(dataUrl || '').split(',');
@@ -47,10 +48,28 @@ async function dataUrlToWebpBlob(dataUrl, { maxWidth = 1800, quality = 0.92 } = 
   return canvasToWebpBlob(canvas, quality);
 }
 
-function addDays(date, days) {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  return next;
+function getTokyoDateParts(date) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: PHOTO_EXPIRY_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  return Object.fromEntries(parts.map((part) => [part.type, part.value]));
+}
+
+function getPhotoExpiryAt(capturedAt) {
+  const parts = getTokyoDateParts(capturedAt);
+  const year = Number(parts.year);
+  const month = Number(parts.month);
+  const day = Number(parts.day);
+  if (!year || !month || !day) {
+    const fallback = new Date(capturedAt);
+    fallback.setDate(fallback.getDate() + PHOTO_EXPIRY_RETENTION_DAYS);
+    fallback.setHours(15, 0, 0, 0);
+    return fallback;
+  }
+  return new Date(Date.UTC(year, month - 1, day + 1, 6, 0, 0, 0));
 }
 
 async function createPhotoUrl(client, storagePath) {
@@ -60,6 +79,20 @@ async function createPhotoUrl(client, storagePath) {
     .createSignedUrl(storagePath, 60 * 60);
   if (!error && data?.signedUrl) return data.signedUrl;
   return '';
+}
+
+async function markExpiredPhotoAssetsDeleted(client, currentIso) {
+  const { error } = await client
+    .from('photo_assets')
+    .update({
+      deleted_at: currentIso,
+      updated_at: currentIso,
+    })
+    .is('deleted_at', null)
+    .lte('expires_at', currentIso);
+  if (error) {
+    console.warn('Failed to mark expired photos as deleted.', error);
+  }
 }
 
 function photoAssetToRecordMemory(asset, imageData = '') {
@@ -140,8 +173,8 @@ export async function savePhotoAsset({ imageData, sourceType = 'album', frame = 
     captured_at: now.toISOString(),
     place: String(place || '').trim(),
     memo: String(memo || '').trim(),
-    expires_at: addDays(now, RETENTION_DAYS).toISOString(),
-    retention_days: RETENTION_DAYS,
+    expires_at: getPhotoExpiryAt(now).toISOString(),
+    retention_days: PHOTO_EXPIRY_RETENTION_DAYS,
   };
 
   let { data, error } = await client
@@ -176,11 +209,14 @@ export async function listPhotoAssets({ storageScope = 'shared' } = {}) {
   const client = requireSupabase();
   const resolvedScope = storageScope === 'personal' ? 'personal' : 'shared';
   const displayScope = resolvedScope === 'personal' ? 'personal' : 'couple';
+  const currentIso = new Date().toISOString();
   const { user, memorySpaceId } = await ensureProfileAndMemorySpace({ scope: resolvedScope });
+  await markExpiredPhotoAssetsDeleted(client, currentIso);
   let query = client
     .from('photo_assets')
     .select('*')
     .is('deleted_at', null)
+    .gt('expires_at', currentIso)
     .order('captured_at', { ascending: false });
   if (resolvedScope === 'personal') {
     query = query
@@ -198,6 +234,7 @@ export async function listPhotoAssets({ storageScope = 'shared' } = {}) {
       .select('*')
       .or(`space_id.eq.${memorySpaceId},memory_space_id.eq.${memorySpaceId}`)
       .is('deleted_at', null)
+      .gt('expires_at', currentIso)
       .order('captured_at', { ascending: false }));
   }
   if (error) throw error;

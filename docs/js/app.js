@@ -63,8 +63,10 @@ import {
   deleteCoupleTodoFromDatabase,
   listCoupleCalendarEntries,
   listCoupleTodos,
+  loadCoupleSettings,
   loadProfileSheet,
   saveCoupleCalendarEntry,
+  saveCoupleSettings,
   saveCoupleTodo,
   saveProfileSheet,
 } from './services/coupleData.js';
@@ -953,10 +955,11 @@ async function syncPhotoAssetsForCurrentConnection(storageScope = uiState.albumP
 
 async function syncCoupleDataFromSupabase(storageScope = 'shared') {
   try {
-    let [calendarEntries, todos, profileSheet] = await Promise.all([
+    let [calendarEntries, todos, profileSheet, coupleSettings] = await Promise.all([
       listCoupleCalendarEntries({ storageScope }),
       listCoupleTodos({ storageScope }),
       loadProfileSheet(),
+      loadCoupleSettings({ storageScope }),
     ]);
     const localState = getState();
     const localCalendarEntries = localState.couple?.calendarEntries || [];
@@ -976,7 +979,7 @@ async function syncCoupleDataFromSupabase(storageScope = 'shared') {
       await saveProfileSheet(profileSheet);
     }
 
-    replaceCoupleDatabaseData({ calendarEntries, todos, profileSheet });
+    replaceCoupleDatabaseData({ calendarEntries, todos, profileSheet, coupleSettings });
     return true;
   } catch (error) {
     console.warn('Failed to load couple data from Supabase. Using local cache.', error);
@@ -9471,8 +9474,14 @@ function bindProfileEvents() {
       updateCoupleSettings({
         anniversaryDate: String(formData.get('anniversaryDate') || '').trim(),
       });
+      const storageScope = uiState.partnerProfile?.hasPartner ? 'shared' : 'personal';
       try {
-        const result = await updateCurrentUserProfile({ displayName: name, birthday });
+        const [result] = await Promise.all([
+          updateCurrentUserProfile({ displayName: name, birthday }),
+          saveCoupleSettings({
+            anniversaryDate: String(formData.get('anniversaryDate') || '').trim(),
+          }, { storageScope }),
+        ]);
         if (result?.error) throw result.error;
       } catch (error) {
         console.warn('Failed to sync profile settings to Supabase.', error);
@@ -9622,6 +9631,14 @@ function bindProfileEvents() {
   document.querySelectorAll('[data-profile-book-open]').forEach((button) => {
     button.addEventListener('click', () => {
       uiState.coupleView = 'profileBook';
+      uiState.screen = 'search';
+      render();
+    });
+  });
+
+  document.querySelectorAll('[data-profile-mission-open]').forEach((button) => {
+    button.addEventListener('click', () => {
+      uiState.coupleView = 'missionList';
       uiState.screen = 'search';
       render();
     });

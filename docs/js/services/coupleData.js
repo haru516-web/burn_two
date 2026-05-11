@@ -144,6 +144,45 @@ export async function deleteCoupleTodoFromDatabase(todoId) {
   if (error) throw error;
 }
 
+export async function loadCoupleSettings({ storageScope = 'shared' } = {}) {
+  const client = requireSupabase();
+  const { user, memorySpaceId, displayScope } = await getCoupleDataContext(storageScope);
+  let query = client
+    .from('couple_settings')
+    .select('*')
+    .limit(1);
+
+  if (displayScope === 'personal') {
+    query = query.eq('author_id', user.id).eq('display_scope', 'personal');
+  } else {
+    query = query.eq('space_id', memorySpaceId).eq('display_scope', 'couple');
+  }
+
+  const { data, error } = await query.maybeSingle();
+  if (error) throw error;
+  return data ? {
+    anniversaryDate: data.anniversary_date || '',
+  } : null;
+}
+
+export async function saveCoupleSettings(settings = {}, { storageScope = 'shared' } = {}) {
+  const client = requireSupabase();
+  const { user, memorySpaceId, displayScope } = await getCoupleDataContext(storageScope);
+  const { data, error } = await client
+    .from('couple_settings')
+    .upsert({
+      space_id: memorySpaceId,
+      author_id: user.id,
+      display_scope: displayScope,
+      anniversary_date: settings.anniversaryDate || null,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'space_id,display_scope' })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export async function loadProfileSheet() {
   const client = requireSupabase();
   const { user } = await getCoupleDataContext('personal');

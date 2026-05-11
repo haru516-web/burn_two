@@ -302,6 +302,48 @@
   height: 15px;
 }
 
+.couple-mission-page {
+  padding-bottom: 18px;
+}
+
+.couple-mission-card {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+}
+
+.couple-mission-card__row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 8px 12px;
+  border: 1px solid rgba(226, 211, 199, 0.9);
+  border-radius: 999px;
+  background: rgba(255, 253, 249, 0.66);
+}
+
+.couple-mission-card__row span {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(198, 161, 146, 0.86);
+  border-radius: 50%;
+  color: #c78382;
+  font-family: 'Cormorant Garamond', 'Times New Roman', serif;
+  font-size: 16px;
+}
+
+.couple-mission-card__row p {
+  margin: 0;
+  color: #4b3b34;
+  font-family: 'Zen Old Mincho', 'Noto Serif JP', serif;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
 .couple-date-tabs {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
