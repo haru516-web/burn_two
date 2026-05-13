@@ -512,7 +512,7 @@ function getResultDetails(result) {
   };
 }
 
-function getResultImageSrc(resultType) {
+export function getResultImageSrc(resultType) {
   const imageName = resultType?.typeName ? `${resultType.typeName}.webp` : '';
   return imageName ? `/image/lovemobby/${encodeURIComponent(imageName)}` : '';
 }

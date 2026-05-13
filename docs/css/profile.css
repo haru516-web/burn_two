@@ -358,6 +358,10 @@
   gap: 14px;
 }
 
+.futari-dashboard-stats {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
 .futari-dashboard-card {
   position: relative;
   min-width: 0;
@@ -399,7 +403,9 @@
 .futari-dashboard-card--anniversary p,
 .futari-dashboard-card--days p,
 .futari-dashboard-card--pages p,
-.futari-dashboard-card--dates p {
+.futari-dashboard-card--dates p,
+.futari-dashboard-card--totals p,
+.futari-dashboard-card--diagnosis p {
   color: #40322c;
   font-family: "Zen Old Mincho", "Noto Serif JP", serif;
   font-size: 15px;
@@ -409,7 +415,8 @@
 .futari-dashboard-card--anniversary strong,
 .futari-dashboard-card--days strong,
 .futari-dashboard-card--pages strong,
-.futari-dashboard-card--dates strong {
+.futari-dashboard-card--dates strong,
+.futari-dashboard-card--totals strong {
   display: block;
   color: #261d19;
   font-family: "Cormorant Garamond", "Times New Roman", serif;
@@ -482,6 +489,108 @@
   padding: 15px 18px;
 }
 
+.futari-dashboard-card--totals {
+  min-height: 86px;
+  display: grid;
+  gap: 8px;
+  align-content: center;
+  justify-items: center;
+  padding: 15px 18px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(255, 253, 249, 0.9), rgba(228, 183, 183, 0.56));
+  text-align: center;
+}
+
+.futari-dashboard-card--totals p {
+  white-space: nowrap;
+}
+
+.futari-dashboard-card--totals__values {
+  display: grid;
+  align-items: center;
+  width: min(100%, 104px);
+  gap: 2px;
+}
+
+.futari-dashboard-card--totals__values strong {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 36px;
+  letter-spacing: 0.02em;
+}
+
+.futari-dashboard-card--totals__values strong:first-child {
+  justify-self: start;
+}
+
+.futari-dashboard-card--totals__values strong:last-child {
+  justify-self: end;
+}
+
+.futari-dashboard-card--totals__values strong span {
+  font-family: "Zen Old Mincho", "Noto Serif JP", serif;
+  font-size: 16px;
+}
+
+.futari-dashboard-card--totals__values .futari-dashboard-card--totals__slash {
+  color: rgba(64, 50, 44, 0.42);
+  font-family: "Cormorant Garamond", "Times New Roman", serif;
+  font-size: 28px;
+}
+
+.futari-dashboard-card--diagnosis {
+  min-height: 86px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: 0;
+  border-radius: 18px;
+  background: rgba(255, 253, 249, 0.78);
+}
+
+.futari-dashboard-card--diagnosis-empty {
+  grid-template-columns: 1fr;
+  align-content: center;
+  padding: 14px;
+}
+
+.futari-dashboard-card--diagnosis img {
+  width: 100%;
+  height: 100%;
+  min-height: 86px;
+  border-radius: inherit;
+  object-fit: cover;
+  background: rgba(255, 235, 244, 0.72);
+}
+
+.futari-dashboard-card--diagnosis div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.futari-dashboard-card--diagnosis span {
+  color: #c85e9c;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.futari-dashboard-card--diagnosis strong {
+  color: #261d19;
+  font-family: "Zen Old Mincho", "Noto Serif JP", serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.futari-dashboard-card--diagnosis > strong {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
 .futari-dashboard-card--pages {
   grid-template-columns: 54px 1fr;
   border-radius: 0;
@@ -545,13 +654,13 @@
 }
 
 .futari-dashboard-magazine {
-  min-height: 278px;
+  min-height: 252px;
   place-items: stretch;
 }
 
 .futari-dashboard-magazine__button {
   display: grid;
-  grid-template-rows: auto minmax(96px, 1fr) auto auto;
+  grid-template-rows: auto minmax(86px, 1fr) auto auto;
   align-content: stretch;
   justify-items: stretch;
   gap: 10px;
@@ -586,15 +695,15 @@
   position: relative;
   display: grid;
   place-items: center;
-  min-height: 112px;
+  min-height: 96px;
   isolation: isolate;
 }
 
 .futari-dashboard-magazine__paper {
   position: absolute;
   overflow: hidden;
-  width: 74px;
-  height: 98px;
+  width: 68px;
+  height: 90px;
   border: 1px solid rgba(226, 211, 199, 0.9);
   background: rgba(255, 253, 249, 0.95);
   box-shadow: 0 12px 24px rgba(110, 78, 68, 0.12);
@@ -841,10 +950,10 @@
   display: grid;
   align-content: center;
   justify-items: center;
-  gap: 8px;
+  gap: 5px;
   width: 100%;
-  min-height: 174px;
-  padding: 10px;
+  min-height: 134px;
+  padding: 6px;
   border: 1px solid rgba(226, 211, 199, 0.9);
   border-radius: 16px;
   color: #4a3932;
@@ -864,7 +973,7 @@
 
 .futari-dashboard-profile-book__button strong {
   font-family: "Zen Old Mincho", "Noto Serif JP", serif;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 500;
 }
 

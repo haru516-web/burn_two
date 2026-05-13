@@ -1,4 +1,5 @@
 import { getIcon } from '../components/icons.js';
+import { getResultImageSrc, readDiagnosisState, RESULT_TYPES } from './loveMobbyDiagnosis.js';
 
 function escapeHtml(value = '') {
   return String(value)
@@ -99,6 +100,27 @@ function renderMagazineCard(posts = []) {
         </span>
       </button>
     </section>
+  `;
+}
+
+function renderDiagnosisResultCard() {
+  const diagnosisState = readDiagnosisState();
+  const resultCode = diagnosisState.resultCode || diagnosisState.result?.resultCode || '';
+  const resultType = RESULT_TYPES[resultCode] || null;
+
+  if (!resultType) {
+    return `
+      <article class="futari-dashboard-card futari-dashboard-card--diagnosis futari-dashboard-card--diagnosis-empty">
+        <p>&#35386;&#26029;&#32080;&#26524;</p>
+        <strong>&#12414;&#12384;&#35386;&#26029;&#12364;&#23436;&#20102;&#12375;&#12390;&#12414;&#12379;&#12435;</strong>
+      </article>
+    `;
+  }
+
+  return `
+    <article class="futari-dashboard-card futari-dashboard-card--diagnosis">
+      <img src="${getResultImageSrc(resultType)}" alt="${escapeHtml(resultType.characterName)}" loading="lazy" decoding="async" />
+    </article>
   `;
 }
 
@@ -391,20 +413,14 @@ export function renderProfile(state, uiState = {}) {
         </section>
 
         <section class="futari-dashboard-stats">
-          <article class="futari-dashboard-card futari-dashboard-card--pages">
-            <span class="futari-dashboard-soft-icon">${getIcon('bookOpen')}</span>
-            <div>
-              <p>&#32207;&#12506;&#12540;&#12472;</p>
-              <strong>${posts.length}</strong>
+          <article class="futari-dashboard-card futari-dashboard-card--totals">
+            <p>&#32207;&#12506;&#12540;&#12472; / &#32207;&#12487;&#12540;&#12488;</p>
+            <div class="futari-dashboard-card--totals__values">
+              <strong>${posts.length}<span>page</span></strong>
+              <strong><span class="futari-dashboard-card--totals__slash">/</span>${totalDates}<span>&#22238;</span></strong>
             </div>
           </article>
-          <article class="futari-dashboard-card futari-dashboard-card--dates">
-            <div>
-              <p>&#32207;&#12487;&#12540;&#12488;&#22238;&#25968;</p>
-              <strong>${totalDates}<span>&#22238;</span></strong>
-            </div>
-            <span class="futari-dashboard-soft-icon">${renderCalendarIcon()}</span>
-          </article>
+          ${renderDiagnosisResultCard()}
         </section>
 
         <section class="futari-dashboard-mid">
