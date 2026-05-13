@@ -214,3 +214,48 @@ export async function saveProfileSheet(profileSheet = {}) {
   if (error) throw error;
   return data;
 }
+
+export async function loadLoveMobbyDiagnosisResult() {
+  const client = requireSupabase();
+  const { user } = await getCoupleDataContext('personal');
+  const { data, error } = await client
+    .from('love_mobby_diagnosis_results')
+    .select('*')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? {
+    resultCode: data.result_code || '',
+    result: data.result_json && typeof data.result_json === 'object' ? data.result_json : null,
+    updatedAt: data.updated_at || '',
+  } : null;
+}
+
+export async function saveLoveMobbyDiagnosisResult(diagnosisState = {}) {
+  const resultCode = diagnosisState.resultCode || diagnosisState.result?.resultCode || '';
+  if (!resultCode) return null;
+  const client = requireSupabase();
+  const { user } = await getCoupleDataContext('personal');
+  const { data, error } = await client
+    .from('love_mobby_diagnosis_results')
+    .upsert({
+      user_id: user.id,
+      result_code: resultCode,
+      result_json: diagnosisState.result && typeof diagnosisState.result === 'object' ? diagnosisState.result : {},
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteLoveMobbyDiagnosisResult() {
+  const client = requireSupabase();
+  const { user } = await getCoupleDataContext('personal');
+  const { error } = await client
+    .from('love_mobby_diagnosis_results')
+    .delete()
+    .eq('user_id', user.id);
+  if (error) throw error;
+}

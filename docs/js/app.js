@@ -70,13 +70,16 @@ import { deletePhotoAsset, listPhotoAssets, movePhotoAssetStorageScope, savePhot
 import {
   deleteCoupleCalendarEntryFromDatabase,
   deleteCoupleTodoFromDatabase,
+  deleteLoveMobbyDiagnosisResult,
   listCoupleCalendarEntries,
   listCoupleTodos,
   loadCoupleSettings,
+  loadLoveMobbyDiagnosisResult,
   loadProfileSheet,
   saveCoupleCalendarEntry,
   saveCoupleSettings,
   saveCoupleTodo,
+  saveLoveMobbyDiagnosisResult,
   saveProfileSheet,
 } from './services/coupleData.js';
 import { acceptInviteLink, createInviteLink, getInviteCodeFromUrl } from './services/inviteLinks.js';
@@ -1040,6 +1043,49 @@ async function persistProfileSheetToSupabase(profileSheet) {
     await saveProfileSheet(profileSheet);
   } catch (error) {
     console.warn('Failed to save profile sheet to Supabase. Keeping local cache.', error);
+  }
+}
+
+async function syncLoveMobbyDiagnosisFromSupabase() {
+  if (!isSupabaseConfigured || uiState.authStatus !== 'authenticated') return false;
+  try {
+    const localDiagnosisState = readDiagnosisState();
+    const remoteResult = await loadLoveMobbyDiagnosisResult();
+    if (remoteResult?.resultCode) {
+      writeDiagnosisState({
+        ...localDiagnosisState,
+        step: 'result',
+        resultCode: remoteResult.resultCode,
+        result: remoteResult.result || localDiagnosisState.result,
+      });
+      return true;
+    }
+    if (localDiagnosisState.resultCode || localDiagnosisState.result?.resultCode) {
+      await saveLoveMobbyDiagnosisResult(localDiagnosisState);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.warn('Failed to sync Love Mobby diagnosis from Supabase. Using local cache.', error);
+    return false;
+  }
+}
+
+async function persistLoveMobbyDiagnosisToSupabase(diagnosisState) {
+  if (!isSupabaseConfigured || uiState.authStatus !== 'authenticated') return;
+  try {
+    await saveLoveMobbyDiagnosisResult(diagnosisState);
+  } catch (error) {
+    console.warn('Failed to save Love Mobby diagnosis to Supabase. Keeping local cache.', error);
+  }
+}
+
+async function deleteLoveMobbyDiagnosisFromSupabase() {
+  if (!isSupabaseConfigured || uiState.authStatus !== 'authenticated') return;
+  try {
+    await deleteLoveMobbyDiagnosisResult();
+  } catch (error) {
+    console.warn('Failed to delete Love Mobby diagnosis from Supabase. Local cache was reset.', error);
   }
 }
 
@@ -8151,7 +8197,9 @@ function bindMagazineEvents() {
     const diagnosisState = readDiagnosisState();
     const nextPage = Number(diagnosisState.page || 0) + 1;
     if (nextPage >= 8) {
-      writeDiagnosisState(buildCompletedState(diagnosisState));
+      const completedState = buildCompletedState(diagnosisState);
+      writeDiagnosisState(completedState);
+      persistLoveMobbyDiagnosisToSupabase(completedState);
     } else {
       writeDiagnosisState({ ...diagnosisState, page: nextPage });
     }
@@ -8176,6 +8224,7 @@ function bindMagazineEvents() {
 
   document.querySelector('[data-love-reset]')?.addEventListener('click', () => {
     writeDiagnosisState(createInitialDiagnosisState());
+    deleteLoveMobbyDiagnosisFromSupabase();
     renderScreen();
   });
 }
@@ -10501,6 +10550,7 @@ async function initializeAuth() {
         syncAlbumPagesForCurrentConnection(),
         syncPhotoAssetsForCurrentConnection(),
         syncCoupleDataFromSupabase(uiState.partnerProfile?.hasPartner ? 'shared' : 'personal'),
+        syncLoveMobbyDiagnosisFromSupabase(),
       ]);
     }
   } catch (error) {
@@ -10520,6 +10570,7 @@ async function initializeAuth() {
           syncAlbumPagesForCurrentConnection(),
           syncPhotoAssetsForCurrentConnection(),
           syncCoupleDataFromSupabase(uiState.partnerProfile?.hasPartner ? 'shared' : 'personal'),
+          syncLoveMobbyDiagnosisFromSupabase(),
         ]))
         .finally(() => render());
       return;
