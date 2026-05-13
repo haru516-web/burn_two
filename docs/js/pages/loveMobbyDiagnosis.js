@@ -514,7 +514,11 @@ function getResultDetails(result) {
 
 export function getResultImageSrc(resultType) {
   const imageName = resultType?.typeName ? `${resultType.typeName}.webp` : '';
-  return imageName ? `./image/lovemobby/${encodeURIComponent(imageName)}` : '';
+  if (!imageName) return '';
+  const pathBase = window.location.pathname.includes('/burn_two')
+    ? '/burn_two/'
+    : '/';
+  return `${pathBase}image/lovemobby/${encodeURIComponent(imageName)}`;
 }
 
 function renderIntro() {
