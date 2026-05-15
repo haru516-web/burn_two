@@ -2637,6 +2637,45 @@
   align-items: start;
 }
 
+.couple-album-tag-search {
+  display: grid;
+  gap: 8px;
+  margin: 6px 0 16px;
+  color: #5b4d42;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.couple-album-tag-search input {
+  min-height: 46px;
+  border: 1px solid rgba(90, 70, 56, 0.14);
+  border-radius: 10px;
+  background: #fffdf9;
+  color: #211d19;
+  padding: 0 14px;
+}
+
+.couple-album-page__tags,
+.post-detail-card__photo-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.couple-album-page__tags span,
+.post-detail-card__photo-tags span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 9px;
+  border: 1px solid rgba(83, 70, 61, 0.12);
+  border-radius: 999px;
+  background: #fffdf9;
+  color: #53463d;
+  font-size: 11px;
+}
+
 .couple-album-page {
   min-width: 0;
   display: grid;

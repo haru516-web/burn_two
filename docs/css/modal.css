@@ -706,7 +706,8 @@
 }
 
 .post-detail-card__photo-form input,
-.post-detail-card__photo-form textarea {
+.post-detail-card__photo-form textarea,
+.post-detail-card__photo-form select {
   width: 100%;
   border: 1px solid rgba(83, 70, 61, 0.16);
   border-radius: 8px;

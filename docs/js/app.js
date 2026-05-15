@@ -82,6 +82,7 @@ import {
   saveLoveMobbyDiagnosisResult,
   saveProfileSheet,
 } from './services/coupleData.js';
+import { ensurePushSubscription, scheduleDateEndNotification } from './services/notifications.js';
 import { acceptInviteLink, createInviteLink, getInviteCodeFromUrl } from './services/inviteLinks.js';
 import { backupRecordMemory, restoreRecordMemoryImages } from './utils/recordMemoryBackup.js';
 
@@ -107,6 +108,7 @@ const uiState = {
   dateListTab: 'upcoming',
   albumPageScope: 'shared',
   albumPhotoScope: 'shared',
+  albumTagQuery: '',
   composeSaveScope: 'shared',
   recordSaveScope: 'shared',
   todoInputOpen: false,
@@ -584,6 +586,21 @@ function escapeHtml(value = '') {
     .replaceAll("'", '&#039;');
 }
 
+function buildPhotoTagsFromMeta(meta = {}) {
+  return Array.from(new Set([
+    meta.place,
+    meta.memo,
+    meta.price,
+    meta.timeOfDay,
+    meta.atmosphere,
+    meta.weather,
+    meta.mood,
+    ...(Array.isArray(meta.tags) ? meta.tags : []),
+  ]
+    .map((tag) => String(tag || '').trim())
+    .filter(Boolean)));
+}
+
 function renderAuthScreen() {
   const isSignup = uiState.authMode === 'signup';
   const isLoading = uiState.authStatus === 'loading';
@@ -785,6 +802,12 @@ function renderPhotoDetail(state, ui = uiState) {
           const dateText = escapeHtml(new Date(photo.createdAt || Date.now()).toLocaleDateString('ja-JP').replace(/\//g, '.'));
           const placeText = escapeHtml(String(photo.place || '').trim());
           const memoText = escapeHtml(String(photo.memo || '').trim());
+          const priceText = escapeHtml(String(photo.price || '').trim());
+          const timeOfDayText = escapeHtml(String(photo.timeOfDay || photo.time_of_day || '').trim());
+          const atmosphereText = escapeHtml(String(photo.atmosphere || '').trim());
+          const weatherText = escapeHtml(String(photo.weather || '').trim());
+          const moodText = escapeHtml(String(photo.mood || '').trim());
+          const captionTags = [priceText, timeOfDayText, atmosphereText, weatherText, moodText].filter(Boolean);
           const canManagePhoto = isOwnPhoto(photo);
           const authorName = escapeHtml(String(photo.authorName || state.profile?.name || 'you').trim() || 'you');
           const activeStorageScope = resolvePhotoStorageScope(photo);
@@ -825,16 +848,39 @@ function renderPhotoDetail(state, ui = uiState) {
                       <span>メモ</span>
                       <textarea name="memo" rows="4">${memoText}</textarea>
                     </label>
+                    <label>
+                      <span>値段タグ</span>
+                      <input type="text" name="price" value="${priceText}" autocomplete="off" />
+                    </label>
+                    <label>
+                      <span>時間帯タグ</span>
+                      <select name="timeOfDay">
+                        ${['', '朝', '昼', '夕', '夜'].map((option) => `<option value="${option}" ${timeOfDayText === option ? 'selected' : ''}>${option || '未選択'}</option>`).join('')}
+                      </select>
+                    </label>
+                    <label>
+                      <span>雰囲気タグ</span>
+                      <input type="text" name="atmosphere" value="${atmosphereText}" autocomplete="off" />
+                    </label>
+                    <label>
+                      <span>天気タグ</span>
+                      <input type="text" name="weather" value="${weatherText}" autocomplete="off" />
+                    </label>
+                    <label>
+                      <span>気分タグ</span>
+                      <input type="text" name="mood" value="${moodText}" autocomplete="off" />
+                    </label>
                     <div class="post-detail-card__photo-form-actions">
                       <button type="button" data-cancel-photo-detail-edit>キャンセル</button>
                       <button type="submit">保存</button>
                     </div>
                   </form>
                 ` : ''}
-                ${(placeText || memoText) ? `
+                ${(placeText || memoText || captionTags.length) ? `
                   <div class="post-detail-card__photo-caption">
                     ${placeText ? `<p class="post-detail-card__photo-place">${placeText}</p>` : ''}
                     ${memoText ? `<p class="post-detail-card__photo-memo">${memoText}</p>` : ''}
+                    ${captionTags.length ? `<div class="post-detail-card__photo-tags">${captionTags.map((tag) => `<span>${tag}</span>`).join('')}</div>` : ''}
                   </div>
                 ` : ''}
               </div>
@@ -1046,6 +1092,17 @@ async function persistProfileSheetToSupabase(profileSheet) {
   }
 }
 
+async function prepareDateEndNotification(entry, endTime) {
+  if (!isSupabaseConfigured || uiState.authStatus !== 'authenticated' || !entry?.id) return;
+  try {
+    const storageScope = uiState.partnerProfile?.hasPartner ? 'shared' : 'personal';
+    await ensurePushSubscription();
+    await scheduleDateEndNotification(entry, { endTime, storageScope });
+  } catch (error) {
+    console.warn('Failed to prepare date end notification. Calendar entry was saved.', error);
+  }
+}
+
 async function syncLoveMobbyDiagnosisFromSupabase() {
   if (!isSupabaseConfigured || uiState.authStatus !== 'authenticated') return false;
   try {
@@ -1125,12 +1182,16 @@ function renderShell() {
   const shellClasses = ['app-shell'];
   const screenAreaClasses = ['screen-area'];
   const themeName = resolveHomeTheme();
-  const isRecordCameraStage = uiState.screen === 'record' && uiState.recordStage === 'camera' && !uiState.recordDraft?.imageData;
+  const isRecordCameraStage = uiState.screen === 'record' && uiState.recordStage === 'camera';
+  const isLiveRecordCameraStage = isRecordCameraStage && !uiState.recordDraft?.imageData;
   const bottomNavScreens = ['home', 'timeline', 'search', 'record', 'magazine', 'profile', 'compose', 'post', 'photo'];
   const hasBottomNav = bottomNavScreens.includes(uiState.screen) && !isRecordCameraStage;
 
   shellClasses.push(`app-shell--theme-${themeName}`);
   shellClasses.push('app-shell--theme-mode-light');
+  if (isRecordCameraStage) {
+    shellClasses.push('app-shell--record-camera-flow');
+  }
   if (hasBottomNav) {
     shellClasses.push('app-shell--with-bottom-nav');
     screenAreaClasses.push('screen-area--with-bottom-nav');
@@ -1149,7 +1210,7 @@ function renderShell() {
     screenAreaClasses.push('screen-area--search');
   } else if (uiState.screen === 'record') {
     screenAreaClasses.push('screen-area--record');
-    if (isRecordCameraStage) {
+    if (isLiveRecordCameraStage) {
       shellClasses.push('app-shell--record-camera');
       screenAreaClasses.push('screen-area--record-camera');
     }
@@ -1298,13 +1359,15 @@ function renderRecordPostingOverlay() {
 function renderScreen() {
   const screenArea = document.getElementById('screenArea');
   if (!screenArea) return;
-  const isRecordCameraStage = uiState.screen === 'record' && uiState.recordStage === 'camera' && !uiState.recordDraft?.imageData;
+  const isRecordCameraStage = uiState.screen === 'record' && uiState.recordStage === 'camera';
+  const isLiveRecordCameraStage = isRecordCameraStage && !uiState.recordDraft?.imageData;
   const bottomNavScreens = ['home', 'timeline', 'search', 'record', 'magazine', 'profile', 'compose', 'post', 'photo'];
   const hasBottomNav = bottomNavScreens.includes(uiState.screen) && !isRecordCameraStage;
   const shell = screenArea.closest('.app-shell');
-  shell?.classList.toggle('app-shell--record-camera', isRecordCameraStage);
+  shell?.classList.toggle('app-shell--record-camera', isLiveRecordCameraStage);
+  shell?.classList.toggle('app-shell--record-camera-flow', isRecordCameraStage);
   shell?.classList.toggle('app-shell--with-bottom-nav', hasBottomNav);
-  screenArea.classList.toggle('screen-area--record-camera', isRecordCameraStage);
+  screenArea.classList.toggle('screen-area--record-camera', isLiveRecordCameraStage);
   screenArea.classList.toggle('screen-area--with-bottom-nav', hasBottomNav);
   const currentBottomNav = shell?.querySelector('.timeline-bottom-nav');
   if (hasBottomNav) {
@@ -1316,7 +1379,7 @@ function renderScreen() {
   } else {
     currentBottomNav?.remove();
   }
-  if (!(uiState.screen === 'record' && uiState.recordStage === 'camera' && !uiState.recordDraft?.imageData)) {
+  if (!isLiveRecordCameraStage) {
     stopRecordCameraStream();
   }
   screenArea.innerHTML = getPageHtml();
@@ -2898,6 +2961,11 @@ function bindSearchEvents() {
     });
   });
 
+  document.querySelector('[data-album-tag-search]')?.addEventListener('change', (event) => {
+    uiState.albumTagQuery = String(event.target.value || '');
+    renderScreen();
+  });
+
   document.querySelectorAll('[data-album-page-scope]').forEach((button) => {
     button.addEventListener('click', async () => {
       if (!hasPartner && button.dataset.albumPageScope === 'shared') return;
@@ -3105,6 +3173,7 @@ function bindSearchEvents() {
       uiState.dateAddDraft = null;
       uiState.dateEditingId = null;
       await persistCoupleCalendarEntryToSupabase(entry);
+      await prepareDateEndNotification(entry, finalDraft.endTime);
       await syncCoupleDataFromSupabase(uiState.partnerProfile?.hasPartner ? 'shared' : 'personal');
       renderScreen();
     });
@@ -9430,6 +9499,22 @@ function bindRecordEvents() {
     });
   });
 
+  document.querySelectorAll('[data-record-choice], [data-record-edit-choice]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const field = button.dataset.recordChoice || button.dataset.recordEditChoice;
+      const value = button.dataset.choiceValue || '';
+      const edit = button.hasAttribute('data-record-edit-choice');
+      const input = document.querySelector(edit ? `[data-record-edit-${field}]` : `[data-record-${field}]`);
+      if (!input) return;
+      const nextValue = input.value === value ? '' : value;
+      input.value = nextValue;
+      const group = button.closest('.record-choice-list');
+      group?.querySelectorAll('button').forEach((item) => {
+        item.classList.toggle('is-selected', item.dataset.choiceValue === nextValue);
+      });
+    });
+  });
+
   document.querySelector('[data-record-retake-photo]')?.addEventListener('click', () => {
     const draft = uiState.recordDraft || {};
     uiState.recordDraft = {
@@ -9456,11 +9541,21 @@ function bindRecordEvents() {
     if (!draft.imageData || !draft.reviewConfirmed) return;
     const memoryInput = {
       ...draft,
-      place: document.querySelector('[data-record-place]')?.value || draft.place || '',
-      memo: document.querySelector('[data-record-memo]')?.value || draft.memo || '',
+      place: String(document.querySelector('[data-record-place]')?.value || draft.place || '').trim(),
+      memo: String(document.querySelector('[data-record-memo]')?.value || draft.memo || '').trim(),
+      price: document.querySelector('[data-record-price]')?.value || draft.price || '',
+      timeOfDay: document.querySelector('[data-record-time-of-day]')?.value || draft.timeOfDay || '',
+      atmosphere: document.querySelector('[data-record-atmosphere]')?.value || draft.atmosphere || '',
+      weather: document.querySelector('[data-record-weather]')?.value || draft.weather || '',
+      mood: document.querySelector('[data-record-mood]')?.value || draft.mood || '',
       sourceType: draft.sourceType || 'album',
       storageScope: resolveStorageScope(uiState.recordSaveScope),
     };
+    if (!memoryInput.place || !memoryInput.memo) {
+      window.alert('場所と感想を入力してください。');
+      return;
+    }
+    memoryInput.tags = buildPhotoTagsFromMeta(memoryInput);
     let saved = null;
     try {
       saved = addRecordMemory(await savePhotoAsset(memoryInput));
@@ -9490,13 +9585,29 @@ function bindRecordEvents() {
     });
   });
 
-  document.querySelector('[data-record-update-memory]')?.addEventListener('click', () => {
+  document.querySelector('[data-record-update-memory]')?.addEventListener('click', async () => {
     const id = uiState.recordEditingId;
     if (!id) return;
-    updateRecordMemory(id, {
-      place: document.querySelector('[data-record-edit-place]')?.value || '',
-      memo: document.querySelector('[data-record-edit-memo]')?.value || '',
-    });
+    const updates = {
+      place: String(document.querySelector('[data-record-edit-place]')?.value || '').trim(),
+      memo: String(document.querySelector('[data-record-edit-memo]')?.value || '').trim(),
+      price: document.querySelector('[data-record-edit-price]')?.value || '',
+      timeOfDay: document.querySelector('[data-record-edit-time-of-day]')?.value || '',
+      atmosphere: document.querySelector('[data-record-edit-atmosphere]')?.value || '',
+      weather: document.querySelector('[data-record-edit-weather]')?.value || '',
+      mood: document.querySelector('[data-record-edit-mood]')?.value || '',
+    };
+    if (!updates.place || !updates.memo) {
+      window.alert('場所と感想を入力してください。');
+      return;
+    }
+    updates.tags = buildPhotoTagsFromMeta(updates);
+    updateRecordMemory(id, updates);
+    try {
+      await updatePhotoAssetMeta(id, updates);
+    } catch (error) {
+      console.warn('Failed to update photo asset metadata. Keeping local update.', error);
+    }
     uiState.recordEditingId = null;
     uiState.recordStage = 'home';
     renderScreen();
@@ -10385,7 +10496,13 @@ function bindPhotoDetailEvents() {
       const updates = {
         place: String(formData.get('place') || '').trim(),
         memo: String(formData.get('memo') || '').trim(),
+        price: String(formData.get('price') || '').trim(),
+        timeOfDay: String(formData.get('timeOfDay') || '').trim(),
+        atmosphere: String(formData.get('atmosphere') || '').trim(),
+        weather: String(formData.get('weather') || '').trim(),
+        mood: String(formData.get('mood') || '').trim(),
       };
+      updates.tags = buildPhotoTagsFromMeta(updates);
       updateRecordMemory(photoId, updates);
       uiState.photoEditingId = null;
       try {

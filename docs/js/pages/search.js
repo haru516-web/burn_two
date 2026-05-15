@@ -2,6 +2,15 @@ import { getIcon } from '../components/icons.js';
 import { getPostDateKey } from '../utils/date.js';
 import { getCalendarEntriesWithSpecialDates, getEntriesForDateWithSpecialDates } from '../utils/specialDates.js';
 
+function escapeHtml(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export const COUPLE_QUESTIONS = [
   {
     id: 'mood',
@@ -588,6 +597,7 @@ function renderPageListEntry(post, activePageScope = 'shared') {
 function renderPhotoListEntry(memory) {
   const dateText = new Date(memory.createdAt || Date.now()).toLocaleDateString('ja-JP').replace(/\//g, '.');
   const photoId = String(memory.id || '');
+  const tags = Array.isArray(memory.tags) ? memory.tags.slice(0, 5) : [];
   return `
     <article class="couple-album-page couple-album-page--photo">
       <button class="couple-album-page__image" type="button" data-open-photo-preview="${photoId}" aria-label="写真を開く">
@@ -595,6 +605,7 @@ function renderPhotoListEntry(memory) {
       </button>
       <div class="couple-album-page__meta">
         <p class="couple-kicker">${dateText}</p>
+        ${tags.length ? `<div class="couple-album-page__tags">${tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join('')}</div>` : ''}
       </div>
     </article>
   `;
@@ -621,6 +632,7 @@ function renderPageList(state, uiState = {}) {
   const hasPartner = Boolean(uiState.partnerProfile?.hasPartner);
   const activePageScope = !hasPartner || uiState.albumPageScope === 'personal' ? 'personal' : 'shared';
   const activePhotoScope = !hasPartner || uiState.albumPhotoScope === 'personal' ? 'personal' : 'shared';
+  const albumTagQuery = String(uiState.albumTagQuery || '').trim().toLowerCase();
   const posts = (state.posts || [])
     .filter((post) => {
       if (activeAlbumTab !== 'pages') return true;
@@ -636,6 +648,20 @@ function renderPageList(state, uiState = {}) {
       const fallbackScope = hasPartner ? 'shared' : 'personal';
       const memoryScope = memory.storageScope === 'personal' || memory.saveScope === 'personal' ? 'personal' : fallbackScope;
       return memoryScope === activePhotoScope;
+    })
+    .filter((memory) => {
+      if (!albumTagQuery) return true;
+      const haystack = [
+        memory.place,
+        memory.memo,
+        memory.price,
+        memory.timeOfDay,
+        memory.atmosphere,
+        memory.weather,
+        memory.mood,
+        ...(Array.isArray(memory.tags) ? memory.tags : []),
+      ].join(' ').toLowerCase();
+      return haystack.includes(albumTagQuery);
     })
     .slice()
     .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
@@ -662,6 +688,12 @@ function renderPageList(state, uiState = {}) {
         <button class="${activePhotoScope === 'shared' ? 'is-active' : ''}${!hasPartner ? ' is-disabled' : ''}" type="button" data-album-photo-scope="shared" role="tab" aria-selected="${activePhotoScope === 'shared'}" ${!hasPartner ? 'disabled aria-disabled="true"' : ''}>共有写真</button>
         <button class="${activePhotoScope === 'personal' ? 'is-active' : ''}" type="button" data-album-photo-scope="personal" role="tab" aria-selected="${activePhotoScope === 'personal'}">個人写真</button>
       </div>
+    ` : ''}
+    ${activeAlbumTab === 'photo' ? `
+      <label class="couple-album-tag-search">
+        <span>タグ検索</span>
+        <input type="search" data-album-tag-search value="${escapeHtml(uiState.albumTagQuery || '')}" placeholder="場所・値段・雰囲気・天気・気分" />
+      </label>
     ` : ''}
     <section class="couple-date-list-page couple-album-grid">
       ${items.length

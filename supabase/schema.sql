@@ -127,6 +127,12 @@ create table if not exists public.photo_assets (
   used_in_page_id uuid references public.completed_pages(id) on delete set null,
   place text not null default '',
   memo text not null default '',
+  price text not null default '',
+  time_of_day text not null default '',
+  atmosphere text not null default '',
+  weather text not null default '',
+  mood text not null default '',
+  tags text[] not null default '{}',
   captured_at timestamptz not null default now(),
   expires_at timestamptz not null,
   deleted_at timestamptz,
@@ -145,6 +151,12 @@ alter table public.photo_assets
   add column if not exists thumbnail_path text,
   add column if not exists place text not null default '',
   add column if not exists memo text not null default '',
+  add column if not exists price text not null default '',
+  add column if not exists time_of_day text not null default '',
+  add column if not exists atmosphere text not null default '',
+  add column if not exists weather text not null default '',
+  add column if not exists mood text not null default '',
+  add column if not exists tags text[] not null default '{}',
   add column if not exists expires_at timestamptz,
   add column if not exists retention_days integer not null default 3,
   add column if not exists deleted_at timestamptz,
@@ -168,6 +180,9 @@ where space_id is null
 alter table public.photo_assets
   alter column display_scope set default 'couple',
   alter column display_scope set not null;
+
+create index if not exists photo_assets_tags_gin_idx
+on public.photo_assets using gin (tags);
 
 do $$
 begin
@@ -219,12 +234,34 @@ create table if not exists public.notifications (
   body text not null default '',
   target_type text,
   target_id uuid,
+  target_key text not null default '',
   delivery_channels_json jsonb not null default '["in_app"]'::jsonb,
   scheduled_for timestamptz,
   sent_at timestamptz,
   read_at timestamptz,
   created_at timestamptz not null default now()
 );
+
+create table if not exists public.push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  endpoint text not null unique,
+  p256dh text not null,
+  auth text not null,
+  user_agent text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.notifications
+  add column if not exists target_key text not null default '';
+
+create unique index if not exists notifications_user_type_target_key_idx
+on public.notifications (user_id, type, target_type, target_key);
+
+create index if not exists notifications_scheduled_delivery_idx
+on public.notifications (scheduled_for)
+where scheduled_for is not null and sent_at is null;
 
 create table if not exists public.couple_calendar_entries (
   id text primary key,
@@ -406,6 +443,7 @@ alter table public.completed_pages enable row level security;
 alter table public.photo_assets enable row level security;
 alter table public.page_text_layers enable row level security;
 alter table public.notifications enable row level security;
+alter table public.push_subscriptions enable row level security;
 alter table public.couple_calendar_entries enable row level security;
 alter table public.couple_todos enable row level security;
 alter table public.couple_settings enable row level security;
@@ -423,6 +461,7 @@ grant select, insert, update on public.photo_assets to authenticated;
 grant select, delete on public.photo_assets to service_role;
 grant select, insert, update on public.page_text_layers to authenticated;
 grant select, insert, update on public.notifications to authenticated;
+grant select, insert, update, delete on public.push_subscriptions to authenticated;
 grant select, insert, update, delete on public.couple_calendar_entries to authenticated;
 grant select, insert, update, delete on public.couple_todos to authenticated;
 grant select, insert, update on public.couple_settings to authenticated;
@@ -583,6 +622,44 @@ with check (
 drop policy if exists "notifications_select_recipient" on public.notifications;
 create policy "notifications_select_recipient"
 on public.notifications for select
+to authenticated
+using (user_id = auth.uid());
+
+drop policy if exists "notifications_insert_recipient" on public.notifications;
+create policy "notifications_insert_recipient"
+on public.notifications for insert
+to authenticated
+with check (user_id = auth.uid());
+
+drop policy if exists "notifications_update_recipient" on public.notifications;
+create policy "notifications_update_recipient"
+on public.notifications for update
+to authenticated
+using (user_id = auth.uid())
+with check (user_id = auth.uid());
+
+drop policy if exists "push_subscriptions_select_own" on public.push_subscriptions;
+create policy "push_subscriptions_select_own"
+on public.push_subscriptions for select
+to authenticated
+using (user_id = auth.uid());
+
+drop policy if exists "push_subscriptions_insert_own" on public.push_subscriptions;
+create policy "push_subscriptions_insert_own"
+on public.push_subscriptions for insert
+to authenticated
+with check (user_id = auth.uid());
+
+drop policy if exists "push_subscriptions_update_own" on public.push_subscriptions;
+create policy "push_subscriptions_update_own"
+on public.push_subscriptions for update
+to authenticated
+using (user_id = auth.uid())
+with check (user_id = auth.uid());
+
+drop policy if exists "push_subscriptions_delete_own" on public.push_subscriptions;
+create policy "push_subscriptions_delete_own"
+on public.push_subscriptions for delete
 to authenticated
 using (user_id = auth.uid());
 

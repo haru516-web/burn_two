@@ -54,6 +54,88 @@ function getSelectedMemories(memories, selectedIds) {
   return (selectedIds || []).map((id) => memoryById.get(id)).filter(Boolean).slice(0, 3);
 }
 
+const RECORD_TIME_OF_DAY_OPTIONS = [
+  { value: '', label: '未選択' },
+  { value: '朝', label: '朝' },
+  { value: '昼', label: '昼' },
+  { value: '夕', label: '夕' },
+  { value: '夜', label: '夜' },
+];
+
+function renderRecordTagFields(draft = {}, { edit = false } = {}) {
+  const prefix = edit ? 'data-record-edit' : 'data-record';
+  const timeOfDay = String(draft.timeOfDay || draft.time_of_day || '');
+  return `
+    <div class="record-tag-fields" aria-label="写真タグ">
+      <label class="record-field">
+        <span>場所タグ</span>
+        <div class="record-input-wrap">${getIcon('pin')}<input type="text" ${prefix}-place value="${escapeHtml(draft.place || '')}" placeholder="代官山" /></div>
+      </label>
+      <label class="record-field">
+        <span>メモタグ</span>
+        <input type="text" ${prefix}-memo value="${escapeHtml(draft.memo || '')}" placeholder="カフェの雰囲気が素敵" />
+      </label>
+      <label class="record-field">
+        <span>値段タグ</span>
+        <input type="text" ${prefix}-price value="${escapeHtml(draft.price || '')}" placeholder="3,000円くらい" />
+      </label>
+      <label class="record-field">
+        <span>時間帯タグ</span>
+        <select ${prefix}-time-of-day>
+          ${RECORD_TIME_OF_DAY_OPTIONS.map((option) => `
+            <option value="${escapeHtml(option.value)}" ${timeOfDay === option.value ? 'selected' : ''}>${escapeHtml(option.label)}</option>
+          `).join('')}
+        </select>
+      </label>
+      <label class="record-field">
+        <span>雰囲気タグ</span>
+        <input type="text" ${prefix}-atmosphere value="${escapeHtml(draft.atmosphere || '')}" placeholder="静か / にぎやか / レトロ" />
+      </label>
+      <label class="record-field">
+        <span>天気タグ</span>
+        <input type="text" ${prefix}-weather value="${escapeHtml(draft.weather || '')}" placeholder="晴れ / 雨 / 曇り" />
+      </label>
+      <label class="record-field">
+        <span>気分タグ</span>
+        <input type="text" ${prefix}-mood value="${escapeHtml(draft.mood || '')}" placeholder="うれしい / のんびり" />
+      </label>
+    </div>
+  `;
+}
+
+const RECORD_PRICE_CHOICES = ['〜1,000円', '〜3,000円', '〜5,000円', '5,000円〜'];
+const RECORD_TIME_CHOICES = ['朝', '昼', '夕', '夜'];
+const RECORD_ATMOSPHERE_CHOICES = ['静か', 'にぎやか', 'おしゃれ', 'レトロ', '自然'];
+const RECORD_WEATHER_CHOICES = ['晴れ', '曇り', '雨', '雪'];
+const RECORD_MOOD_CHOICES = ['うれしい', 'のんびり', '楽しい', '特別', '落ち着く'];
+
+function renderRecordChoiceField({ label, field, value = '', options = [], edit = false }) {
+  const attrPrefix = edit ? 'data-record-edit' : 'data-record';
+  const dataPrefix = edit ? 'record-edit' : 'record';
+  const selectedValue = String(value || '');
+  return `
+    <div class="record-choice-field">
+      <p>${escapeHtml(label)}</p>
+      <input type="hidden" ${attrPrefix}-${field} value="${escapeHtml(selectedValue)}" />
+      <div class="record-choice-list" role="group" aria-label="${escapeHtml(label)}">
+        ${options.map((option) => `<button class="${selectedValue === option ? 'is-selected' : ''}" type="button" data-${dataPrefix}-choice="${escapeHtml(field)}" data-choice-value="${escapeHtml(option)}">${escapeHtml(option)}</button>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderRecordChoiceFields(draft = {}, { edit = false } = {}) {
+  return `
+    <div class="record-tag-fields record-tag-fields--extra" aria-label="追加情報">
+      ${renderRecordChoiceField({ label: '値段', field: 'price', value: draft.price, options: RECORD_PRICE_CHOICES, edit })}
+      ${renderRecordChoiceField({ label: '時間帯', field: 'time-of-day', value: draft.timeOfDay || draft.time_of_day, options: RECORD_TIME_CHOICES, edit })}
+      ${renderRecordChoiceField({ label: '雰囲気', field: 'atmosphere', value: draft.atmosphere, options: RECORD_ATMOSPHERE_CHOICES, edit })}
+      ${renderRecordChoiceField({ label: '天気', field: 'weather', value: draft.weather, options: RECORD_WEATHER_CHOICES, edit })}
+      ${renderRecordChoiceField({ label: '気分', field: 'mood', value: draft.mood, options: RECORD_MOOD_CHOICES, edit })}
+    </div>
+  `;
+}
+
 function renderMemoryCards(memories) {
   if (!memories.length) return '';
   return `
@@ -173,15 +255,15 @@ function renderRecordCamera(draft) {
     { id: 'nikon-d200', label: '2000' },
   ];
   return `
-    <section class="record-page record-page--camera ${hasPhoto && isPhotoConfirmed ? 'is-inputting' : ''}">
+    <section class="record-page record-page--camera ${hasPhoto && !isPhotoConfirmed ? 'is-reviewing' : ''} ${hasPhoto && isPhotoConfirmed ? 'is-inputting' : ''}">
       <header class="record-camera-header">
         <button type="button" data-record-back-home aria-label="閉じる">${getIcon('close')}</button>
         <h1>写真を記録</h1>
         <span>${getIcon('bolt')}</span>
       </header>
 
-      <div class="record-camera-stage record-camera-stage--${activeFrame} ${hasPhoto ? 'has-photo' : ''} ${hasPhoto && isPhotoConfirmed ? 'is-inputting' : ''}">
-        <div class="record-camera-preview record-camera-preview--${activeFrame} ${hasPhoto ? 'has-photo' : ''} ${hasPhoto && isPhotoConfirmed ? 'is-inputting' : ''}">
+      <div class="record-camera-stage record-camera-stage--${activeFrame} ${hasPhoto ? 'has-photo' : ''} ${hasPhoto && !isPhotoConfirmed ? 'is-reviewing' : ''} ${hasPhoto && isPhotoConfirmed ? 'is-inputting' : ''}">
+        <div class="record-camera-preview record-camera-preview--${activeFrame} ${hasPhoto ? 'has-photo' : ''} ${hasPhoto && !isPhotoConfirmed ? 'is-reviewing' : ''} ${hasPhoto && isPhotoConfirmed ? 'is-inputting' : ''}">
         ${hasPhoto
           ? `<img class="record-filter-${escapeHtml(activeFilter)}" src="${draft.imageData}" alt="" />`
           : `<button class="record-frame-switch" type="button" data-record-switch-frame aria-label="写真枠を切り替え">
@@ -227,13 +309,42 @@ function renderRecordCamera(draft) {
         </div>
         ${hasPhoto && isPhotoConfirmed ? `
           <label class="record-field">
-            <span>場所</span>
-            <div class="record-input-wrap">${getIcon('pin')}<input type="text" data-record-place value="${escapeHtml(draft.place || '')}" placeholder="代官山" /></div>
+            <span>場所 <em>必須</em></span>
+            <div class="record-input-wrap">${getIcon('pin')}<input type="text" data-record-place value="${escapeHtml(draft.place || '')}" placeholder="代官山" required /></div>
           </label>
           <label class="record-field">
-            <span>メモ (任意)</span>
-            <input type="text" data-record-memo value="${escapeHtml(draft.memo || '')}" placeholder="例: カフェの雰囲気が素敵だった" />
+            <span>感想 <em>必須</em></span>
+            <input type="text" data-record-memo value="${escapeHtml(draft.memo || '')}" placeholder="例: カフェの雰囲気が素敵だった" required />
           </label>
+          ${renderRecordChoiceFields(draft)}
+        ` : ''}
+        ${hasPhoto && isPhotoConfirmed ? `
+          <div class="record-tag-fields record-tag-fields--extra" aria-label="追加タグ">
+            <label class="record-field">
+              <span>値段タグ</span>
+              <input type="text" data-record-price value="${escapeHtml(draft.price || '')}" placeholder="3,000円くらい" />
+            </label>
+            <label class="record-field">
+              <span>時間帯タグ</span>
+              <select data-record-time-of-day>
+                ${RECORD_TIME_OF_DAY_OPTIONS.map((option) => `
+                  <option value="${escapeHtml(option.value)}" ${String(draft.timeOfDay || draft.time_of_day || '') === option.value ? 'selected' : ''}>${escapeHtml(option.label)}</option>
+                `).join('')}
+              </select>
+            </label>
+            <label class="record-field">
+              <span>雰囲気タグ</span>
+              <input type="text" data-record-atmosphere value="${escapeHtml(draft.atmosphere || '')}" placeholder="静か / レトロ" />
+            </label>
+            <label class="record-field">
+              <span>天気タグ</span>
+              <input type="text" data-record-weather value="${escapeHtml(draft.weather || '')}" placeholder="晴れ / 雨" />
+            </label>
+            <label class="record-field">
+              <span>気分タグ</span>
+              <input type="text" data-record-mood value="${escapeHtml(draft.mood || '')}" placeholder="うれしい / のんびり" />
+            </label>
+          </div>
         ` : ''}
         <div class="record-camera-actions">
           <button class="record-secondary-button" type="button" data-record-open-album>
@@ -264,13 +375,40 @@ function renderRecordEdit(memory) {
         <img src="${memory.imageData}" alt="" />
         <div class="record-edit-card__time">${getIcon('clock')} <strong>${escapeHtml(memory.time)}</strong></div>
         <label class="record-field">
-          <span>場所</span>
-          <div class="record-input-wrap">${getIcon('pin')}<input type="text" data-record-edit-place value="${escapeHtml(memory.place || '')}" placeholder="代官山" /></div>
+          <span>場所 <em>必須</em></span>
+          <div class="record-input-wrap">${getIcon('pin')}<input type="text" data-record-edit-place value="${escapeHtml(memory.place || '')}" placeholder="代官山" required /></div>
         </label>
         <label class="record-field">
-          <span>メモ</span>
-          <input type="text" data-record-edit-memo value="${escapeHtml(memory.memo || '')}" placeholder="例: カフェの雰囲気が素敵だった" />
+          <span>感想 <em>必須</em></span>
+          <input type="text" data-record-edit-memo value="${escapeHtml(memory.memo || '')}" placeholder="例: カフェの雰囲気が素敵だった" required />
         </label>
+        ${renderRecordChoiceFields(memory, { edit: true })}
+        <div class="record-tag-fields record-tag-fields--extra" aria-label="追加タグ">
+          <label class="record-field">
+            <span>値段タグ</span>
+            <input type="text" data-record-edit-price value="${escapeHtml(memory.price || '')}" placeholder="3,000円くらい" />
+          </label>
+          <label class="record-field">
+            <span>時間帯タグ</span>
+            <select data-record-edit-time-of-day>
+              ${RECORD_TIME_OF_DAY_OPTIONS.map((option) => `
+                <option value="${escapeHtml(option.value)}" ${String(memory.timeOfDay || memory.time_of_day || '') === option.value ? 'selected' : ''}>${escapeHtml(option.label)}</option>
+              `).join('')}
+            </select>
+          </label>
+          <label class="record-field">
+            <span>雰囲気タグ</span>
+            <input type="text" data-record-edit-atmosphere value="${escapeHtml(memory.atmosphere || '')}" placeholder="静か / レトロ" />
+          </label>
+          <label class="record-field">
+            <span>天気タグ</span>
+            <input type="text" data-record-edit-weather value="${escapeHtml(memory.weather || '')}" placeholder="晴れ / 雨" />
+          </label>
+          <label class="record-field">
+            <span>気分タグ</span>
+            <input type="text" data-record-edit-mood value="${escapeHtml(memory.mood || '')}" placeholder="うれしい / のんびり" />
+          </label>
+        </div>
         <button class="record-primary-button" type="button" data-record-update-memory="${memory.id}">保存</button>
       </article>
     </section>

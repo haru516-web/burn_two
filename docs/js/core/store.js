@@ -127,6 +127,12 @@ function normalizeRecordMemory(memory) {
     time: memory.time || new Date().toTimeString().slice(0, 5),
     place: memory.place || '',
     memo: memory.memo || '',
+    price: memory.price || '',
+    timeOfDay: memory.timeOfDay || memory.time_of_day || '',
+    atmosphere: memory.atmosphere || '',
+    weather: memory.weather || '',
+    mood: memory.mood || '',
+    tags: Array.isArray(memory.tags) ? memory.tags.map((tag) => String(tag).trim()).filter(Boolean) : [],
     frame: memory.frame === 'portrait' ? 'portrait' : 'landscape',
     pageCrop: {
       x: Math.min(1, Math.max(0, Number(memory.pageCrop?.x) || 0.5)),
@@ -397,6 +403,12 @@ export function updateRecordMemory(memoryId, updates) {
   if (!memory) return null;
   memory.place = String(updates?.place ?? memory.place ?? '').trim();
   memory.memo = String(updates?.memo ?? memory.memo ?? '').trim();
+  memory.price = String(updates?.price ?? memory.price ?? '').trim();
+  memory.timeOfDay = String(updates?.timeOfDay ?? updates?.time_of_day ?? memory.timeOfDay ?? '').trim();
+  memory.atmosphere = String(updates?.atmosphere ?? memory.atmosphere ?? '').trim();
+  memory.weather = String(updates?.weather ?? memory.weather ?? '').trim();
+  memory.mood = String(updates?.mood ?? memory.mood ?? '').trim();
+  memory.tags = Array.isArray(updates?.tags) ? updates.tags.map((tag) => String(tag).trim()).filter(Boolean) : (Array.isArray(memory.tags) ? memory.tags : []);
   if (updates?.pageCrop && typeof updates.pageCrop === 'object') {
     memory.pageCrop = {
       x: Math.min(1, Math.max(0, Number(updates.pageCrop.x) || 0.5)),

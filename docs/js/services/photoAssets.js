@@ -108,6 +108,12 @@ function photoAssetToRecordMemory(asset, imageData = '') {
     time: new Date(capturedAt).toTimeString().slice(0, 5),
     place: asset.place || '',
     memo: asset.memo || '',
+    price: asset.price || '',
+    timeOfDay: asset.time_of_day || asset.timeOfDay || '',
+    atmosphere: asset.atmosphere || '',
+    weather: asset.weather || '',
+    mood: asset.mood || '',
+    tags: Array.isArray(asset.tags) ? asset.tags : [],
     frame: asset.frame === 'portrait' ? 'portrait' : 'landscape',
     pageCrop: asset.page_crop || { x: 0.5, y: 0.5, zoom: 1 },
     createdAt: capturedAt,
@@ -118,6 +124,21 @@ function photoAssetToRecordMemory(asset, imageData = '') {
   };
 }
 
+function buildPhotoTags({ place = '', memo = '', price = '', timeOfDay = '', atmosphere = '', weather = '', mood = '', tags = [] } = {}) {
+  return Array.from(new Set([
+    place,
+    memo,
+    price,
+    timeOfDay,
+    atmosphere,
+    weather,
+    mood,
+    ...(Array.isArray(tags) ? tags : []),
+  ]
+    .map((tag) => String(tag || '').trim())
+    .filter(Boolean)));
+}
+
 function isMissingDisplayColumnError(error) {
   const message = String(error?.message || error?.details || '');
   return error?.code === '42703'
@@ -126,7 +147,7 @@ function isMissingDisplayColumnError(error) {
     || message.includes('author_id');
 }
 
-export async function savePhotoAsset({ imageData, sourceType = 'album', frame = 'landscape', place = '', memo = '', createdAt = '', storageScope = 'shared' }) {
+export async function savePhotoAsset({ imageData, sourceType = 'album', frame = 'landscape', place = '', memo = '', price = '', timeOfDay = '', atmosphere = '', weather = '', mood = '', tags = [], createdAt = '', storageScope = 'shared' }) {
   if (!imageData) throw new Error('Photo image data is required.');
   const client = requireSupabase();
   const displayScope = storageScope === 'personal' ? 'personal' : 'shared';
@@ -173,6 +194,12 @@ export async function savePhotoAsset({ imageData, sourceType = 'album', frame = 
     captured_at: now.toISOString(),
     place: String(place || '').trim(),
     memo: String(memo || '').trim(),
+    price: String(price || '').trim(),
+    time_of_day: String(timeOfDay || '').trim(),
+    atmosphere: String(atmosphere || '').trim(),
+    weather: String(weather || '').trim(),
+    mood: String(mood || '').trim(),
+    tags: buildPhotoTags({ place, memo, price, timeOfDay, atmosphere, weather, mood, tags }),
     expires_at: getPhotoExpiryAt(now).toISOString(),
     retention_days: PHOTO_EXPIRY_RETENTION_DAYS,
   };
@@ -187,6 +214,12 @@ export async function savePhotoAsset({ imageData, sourceType = 'album', frame = 
       author_id: _authorId,
       display_space_id: _displaySpaceId,
       display_scope: _displayScope,
+      price: _price,
+      time_of_day: _timeOfDay,
+      atmosphere: _atmosphere,
+      weather: _weather,
+      mood: _mood,
+      tags: _tags,
       ...legacyPayload
     } = insertPayload;
     ({ data, error } = await client
@@ -201,6 +234,12 @@ export async function savePhotoAsset({ imageData, sourceType = 'album', frame = 
     ...photoAssetToRecordMemory({ ...data, storageScope: displayScope }, imageData),
     place,
     memo,
+    price,
+    timeOfDay,
+    atmosphere,
+    weather,
+    mood,
+    tags: buildPhotoTags({ place, memo, price, timeOfDay, atmosphere, weather, mood, tags }),
     frame: frame === 'portrait' ? 'portrait' : 'landscape',
   };
 }
@@ -246,7 +285,7 @@ export async function listPhotoAssets({ storageScope = 'shared' } = {}) {
   }));
 }
 
-export async function updatePhotoAssetMeta(photoId, { place = '', memo = '' } = {}) {
+export async function updatePhotoAssetMeta(photoId, { place = '', memo = '', price = '', timeOfDay = '', atmosphere = '', weather = '', mood = '', tags = [] } = {}) {
   const normalizedPhotoId = String(photoId || '');
   if (!normalizedPhotoId) throw new Error('Photo id is missing.');
 
@@ -257,6 +296,12 @@ export async function updatePhotoAssetMeta(photoId, { place = '', memo = '' } = 
     .update({
       place: String(place || '').trim(),
       memo: String(memo || '').trim(),
+      price: String(price || '').trim(),
+      time_of_day: String(timeOfDay || '').trim(),
+      atmosphere: String(atmosphere || '').trim(),
+      weather: String(weather || '').trim(),
+      mood: String(mood || '').trim(),
+      tags: buildPhotoTags({ place, memo, price, timeOfDay, atmosphere, weather, mood, tags }),
       updated_at: new Date().toISOString(),
     })
     .eq('id', normalizedPhotoId)
