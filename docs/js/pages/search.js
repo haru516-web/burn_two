@@ -626,6 +626,20 @@ function renderPageListEntry(post, activePageScope = 'shared') {
   `;
 }
 
+function normalizeAlbumSearchText(value = '') {
+  return String(value || '')
+    .normalize('NFKC')
+    .trim()
+    .toLowerCase();
+}
+
+function uniqueAlbumSearchParts(parts = []) {
+  return Array.from(new Set(parts
+    .flatMap((part) => Array.isArray(part) ? part : [part])
+    .map((part) => String(part || '').trim())
+    .filter(Boolean)));
+}
+
 function renderPhotoListEntry(memory) {
   const dateText = new Date(memory.createdAt || Date.now()).toLocaleDateString('ja-JP').replace(/\//g, '.');
   const photoId = String(memory.id || '');
@@ -644,32 +658,39 @@ function renderPhotoListEntry(memory) {
 }
 
 function getAlbumPageSearchText(post) {
-  return [
+  return uniqueAlbumSearchParts([
+    getPostTitle(post),
+    post.caption,
+    post.composeData?.headline,
+    post.composeData?.subhead,
+    post.composeData?.body,
+    post.composeData?.date,
     ...(post.composeData?.recordPhotoTags || []),
     ...(post.recordPhotoTags || []),
+    ...(post.composeData?.freeTags || []),
+    ...(post.composeData?.fixedTags || []),
     ...(post.freeTags || []),
     ...(post.fixedTags || []),
-  ]
-    .map((tag) => String(tag || '').trim())
-    .filter(Boolean)
+  ])
     .filter((tag) => !['record', 'completed'].includes(tag.toLowerCase()))
     .join(' ')
+    .normalize('NFKC')
     .toLowerCase();
 }
 
 function getAlbumPhotoSearchText(memory) {
-  return [
+  return uniqueAlbumSearchParts([
     memory.place,
+    memory.memo,
     memory.price,
     memory.timeOfDay,
     memory.atmosphere,
     memory.weather,
     memory.mood,
     ...(Array.isArray(memory.tags) ? memory.tags : []),
-  ]
-    .map((tag) => String(tag || '').trim())
-    .filter(Boolean)
+  ])
     .join(' ')
+    .normalize('NFKC')
     .toLowerCase();
 }
 
@@ -694,7 +715,7 @@ function renderPageList(state, uiState = {}) {
   const hasPartner = Boolean(uiState.partnerProfile?.hasPartner);
   const activePageScope = !hasPartner || uiState.albumPageScope === 'personal' ? 'personal' : 'shared';
   const activePhotoScope = !hasPartner || uiState.albumPhotoScope === 'personal' ? 'personal' : 'shared';
-  const albumTagQuery = String(uiState.albumTagQuery || '').trim().toLowerCase();
+  const albumTagQuery = normalizeAlbumSearchText(uiState.albumTagQuery);
   const albumSearchOpen = Boolean(uiState.albumSearchOpen || albumTagQuery);
   const posts = (state.posts || [])
     .filter((post) => {

@@ -2912,13 +2912,18 @@ function bindSearchEvents() {
   bindPostInteractions(document.getElementById('screenArea'));
   bindScreenScrollSurfaces();
   const hasPartner = Boolean(uiState.partnerProfile?.hasPartner);
+  const normalizeAlbumSearchText = (value = '') => String(value || '')
+    .normalize('NFKC')
+    .trim()
+    .toLowerCase();
   const applyAlbumTagFilter = (query = '') => {
-    const normalizedQuery = String(query || '').trim().toLowerCase();
+    const normalizedQuery = normalizeAlbumSearchText(query);
     let visibleCount = 0;
     document.querySelectorAll('[data-album-search-text]').forEach((item) => {
-      const searchText = String(item.dataset.albumSearchText || '').toLowerCase();
+      const searchText = normalizeAlbumSearchText(item.dataset.albumSearchText);
       const isHidden = Boolean(normalizedQuery && !searchText.includes(normalizedQuery));
       item.hidden = isHidden;
+      item.style.display = isHidden ? 'none' : '';
       if (!isHidden) visibleCount += 1;
     });
     const emptyMessage = document.querySelector('[data-album-search-empty]');
