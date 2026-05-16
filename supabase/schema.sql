@@ -1,5 +1,5 @@
 -- BURN Supabase schema snapshot.
--- Safe to re-run: no destructive drop/truncate/delete statements are used.
+-- Safe to re-run for schema setup, but it includes delete-capable policies and account cleanup functions.
 
 create extension if not exists "pgcrypto";
 
@@ -458,8 +458,8 @@ grant usage on schema public to authenticated;
 grant select, insert, update on public.profiles to authenticated;
 grant select, insert, update on public.memory_spaces to authenticated;
 grant select, insert, update on public.space_members to authenticated;
-grant select, insert, update on public.completed_pages to authenticated;
-grant select, insert, update on public.photo_assets to authenticated;
+grant select, insert, update, delete on public.completed_pages to authenticated;
+grant select, insert, update, delete on public.photo_assets to authenticated;
 grant select, delete on public.photo_assets to service_role;
 grant select, insert, update on public.page_text_layers to authenticated;
 grant select, insert, update on public.notifications to authenticated;
@@ -573,6 +573,12 @@ with check (
   )
 );
 
+drop policy if exists "completed_pages_delete_author" on public.completed_pages;
+create policy "completed_pages_delete_author"
+on public.completed_pages for delete
+to authenticated
+using (author_id = auth.uid());
+
 drop policy if exists "photo_assets_select_owner_or_member" on public.photo_assets;
 create policy "photo_assets_select_owner_or_member"
 on public.photo_assets for select
@@ -620,6 +626,12 @@ with check (
       and sm.user_id = auth.uid()
   )
 );
+
+drop policy if exists "photo_assets_delete_author" on public.photo_assets;
+create policy "photo_assets_delete_author"
+on public.photo_assets for delete
+to authenticated
+using (coalesce(author_id, user_id) = auth.uid());
 
 drop policy if exists "notifications_select_recipient" on public.notifications;
 create policy "notifications_select_recipient"
@@ -1202,6 +1214,19 @@ with check (
   )
 );
 
+drop policy if exists "photo_assets_storage_delete_own_folder" on storage.objects;
+create policy "photo_assets_storage_delete_own_folder"
+on storage.objects for delete
+to authenticated
+using (
+  bucket_id = 'photo-assets'
+  and exists (
+    select 1 from public.space_members sm
+    where sm.space_id::text = (storage.foldername(name))[1]
+      and sm.user_id = auth.uid()
+  )
+);
+
 drop policy if exists "completed_pages_storage_select_own_folder" on storage.objects;
 create policy "completed_pages_storage_select_own_folder"
 on storage.objects for select
@@ -1239,6 +1264,19 @@ create policy "completed_pages_storage_insert_own_folder"
 on storage.objects for insert
 to authenticated
 with check (
+  bucket_id = 'completed-pages'
+  and exists (
+    select 1 from public.space_members sm
+    where sm.space_id::text = (storage.foldername(name))[1]
+      and sm.user_id = auth.uid()
+  )
+);
+
+drop policy if exists "completed_pages_storage_delete_own_folder" on storage.objects;
+create policy "completed_pages_storage_delete_own_folder"
+on storage.objects for delete
+to authenticated
+using (
   bucket_id = 'completed-pages'
   and exists (
     select 1 from public.space_members sm

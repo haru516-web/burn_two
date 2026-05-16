@@ -81,17 +81,42 @@ async function createPhotoUrl(client, storagePath) {
   return '';
 }
 
-async function markExpiredPhotoAssetsDeleted(client, currentIso) {
-  const { error } = await client
+function getPhotoAssetStoragePaths(assets = []) {
+  return Array.from(new Set((assets || [])
+    .flatMap((asset) => [asset?.storage_path, asset?.thumbnail_path])
+    .map((path) => String(path || '').trim())
+    .filter(Boolean)));
+}
+
+async function removePhotoAssetFiles(client, assets = []) {
+  const paths = getPhotoAssetStoragePaths(assets);
+  if (!paths.length) return;
+  const { error } = await client.storage.from(PHOTO_BUCKET).remove(paths);
+  if (error) {
+    console.warn('Failed to remove photo files from storage.', error);
+  }
+}
+
+async function deleteExpiredPhotoAssets(client, currentIso) {
+  const { data: expiredAssets, error: readError } = await client
     .from('photo_assets')
-    .update({
-      deleted_at: currentIso,
-      updated_at: currentIso,
-    })
+    .select('id, storage_path, thumbnail_path')
     .is('deleted_at', null)
     .lte('expires_at', currentIso);
+  if (readError) {
+    console.warn('Failed to read expired photos before deletion.', readError);
+    return;
+  }
+  if (!expiredAssets?.length) return;
+
+  await removePhotoAssetFiles(client, expiredAssets);
+
+  const { error } = await client
+    .from('photo_assets')
+    .delete()
+    .in('id', expiredAssets.map((asset) => asset.id));
   if (error) {
-    console.warn('Failed to mark expired photos as deleted.', error);
+    console.warn('Failed to delete expired photos from database.', error);
   }
 }
 
@@ -124,10 +149,9 @@ function photoAssetToRecordMemory(asset, imageData = '') {
   };
 }
 
-function buildPhotoTags({ place = '', memo = '', price = '', timeOfDay = '', atmosphere = '', weather = '', mood = '', tags = [] } = {}) {
+function buildPhotoTags({ place = '', price = '', timeOfDay = '', atmosphere = '', weather = '', mood = '', tags = [] } = {}) {
   return Array.from(new Set([
     place,
-    memo,
     price,
     timeOfDay,
     atmosphere,
@@ -250,7 +274,7 @@ export async function listPhotoAssets({ storageScope = 'shared' } = {}) {
   const displayScope = resolvedScope === 'personal' ? 'personal' : 'couple';
   const currentIso = new Date().toISOString();
   const { user, memorySpaceId } = await ensureProfileAndMemorySpace({ scope: resolvedScope });
-  await markExpiredPhotoAssetsDeleted(client, currentIso);
+  await deleteExpiredPhotoAssets(client, currentIso);
   let query = client
     .from('photo_assets')
     .select('*')
@@ -346,12 +370,20 @@ export async function deletePhotoAsset(photoId) {
 
   const client = requireSupabase();
   const { user } = await ensureProfileAndMemorySpace({ scope: 'personal' });
+  const { data: asset, error: readError } = await client
+    .from('photo_assets')
+    .select('id, storage_path, thumbnail_path')
+    .eq('id', normalizedPhotoId)
+    .eq('author_id', user.id)
+    .maybeSingle();
+  if (readError) throw readError;
+  if (!asset) return true;
+
+  await removePhotoAssetFiles(client, [asset]);
+
   const { error } = await client
     .from('photo_assets')
-    .update({
-      deleted_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
+    .delete()
     .eq('id', normalizedPhotoId)
     .eq('author_id', user.id);
   if (error) throw error;

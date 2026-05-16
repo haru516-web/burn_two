@@ -59,6 +59,7 @@ import {
 } from './services/supabase.js';
 import {
   completedPageToLocalPost,
+  deleteCompletedPage,
   ensureProfileAndMemorySpace,
   listCompletedPages,
   moveCompletedPageStorageScope,
@@ -590,7 +591,6 @@ function escapeHtml(value = '') {
 function buildPhotoTagsFromMeta(meta = {}) {
   return Array.from(new Set([
     meta.place,
-    meta.memo,
     meta.price,
     meta.timeOfDay,
     meta.atmosphere,
@@ -934,6 +934,24 @@ function buildCompletedEditorSnapshot({
   };
 }
 
+function getRecordPagePhotoTags(memoryIds = []) {
+  const idSet = new Set(memoryIds.map((id) => String(id || '')).filter(Boolean));
+  if (!idSet.size) return [];
+  const tags = [];
+  (getState().recordMemories || []).forEach((memory) => {
+    if (!idSet.has(String(memory.id || ''))) return;
+    const memoText = String(memory.memo || '').trim();
+    (Array.isArray(memory.tags) ? memory.tags : [])
+      .map((tag) => String(tag || '').trim())
+      .filter(Boolean)
+      .filter((tag) => tag !== memoText)
+      .forEach((tag) => {
+        if (!tags.includes(tag)) tags.push(tag);
+      });
+  });
+  return tags;
+}
+
 async function saveCompletedPageToSupabase(input) {
   const editorSnapshot = buildCompletedEditorSnapshot(input);
   return saveCompletedPage({
@@ -959,6 +977,16 @@ async function syncCompletedPagesFromSupabase(storageScope = uiState.albumPageSc
   } catch (error) {
     console.warn('Failed to load completed pages from Supabase. Using local cache.', error);
     return false;
+  }
+}
+
+async function deleteCompletedPageFromSupabase(postId) {
+  if (!String(postId || '').startsWith('completed_')) return;
+  if (!isSupabaseConfigured || uiState.authStatus !== 'authenticated') return;
+  try {
+    await deleteCompletedPage(postId);
+  } catch (error) {
+    console.warn('Failed to delete completed page from Supabase. Local cache was updated.', error);
   }
 }
 
@@ -2686,8 +2714,9 @@ function bindTimelineEvents() {
   });
 
   document.querySelectorAll('[data-home-open-camera]').forEach((button) => {
-    button.addEventListener('click', () => {
+    button.addEventListener('click', async () => {
       const recordDate = uiState.selectedCalendarDate || getTodayDateKey();
+      if (recordDate !== getTodayDateKey()) return;
       const time = new Date().toTimeString().slice(0, 5);
       uiState.recordDate = recordDate;
       uiState.recordStage = 'camera';
@@ -3248,8 +3277,10 @@ function bindSearchEvents() {
   });
 
   document.querySelectorAll('[data-delete-page-entry]').forEach((button) => {
-    button.addEventListener('click', () => {
-      deletePost(button.dataset.deletePageEntry);
+    button.addEventListener('click', async () => {
+      const postId = button.dataset.deletePageEntry;
+      deletePost(postId);
+      await deleteCompletedPageFromSupabase(postId);
       renderScreen();
     });
   });
@@ -9235,10 +9266,13 @@ async function saveRecordGeneratedPage({
   const title = String(uiState.recordTitle || '').trim() || 'A day to remember';
   const recordDate = uiState.recordDate || getTodayDateKey();
   const recordCreatedAt = `${recordDate}T12:00:00`;
+  const recordMemoryIds = selectedIds.slice(0, 3);
+  const recordPhotoTags = getRecordPagePhotoTags(recordMemoryIds);
   const composeData = {
     source: 'record',
     recordDate,
-    recordMemoryIds: selectedIds.slice(0, 3),
+    recordMemoryIds,
+    recordPhotoTags,
     recordTemplateId: uiState.recordTemplateId || DEFAULT_RECORD_TEMPLATE,
     recordBackgroundId: uiState.recordBackgroundId || DEFAULT_RECORD_BACKGROUND,
     recordPhotoFeather: uiState.recordPhotoFeather !== false,
@@ -9256,7 +9290,7 @@ async function saveRecordGeneratedPage({
       caption: title,
       imageData,
       fixedTags: ['record'],
-      freeTags: [],
+      freeTags: recordPhotoTags,
       storageScope: resolveStorageScope(uiState.recordSaveScope),
       likes: 0,
       saves: 0,
@@ -9280,7 +9314,7 @@ async function saveRecordGeneratedPage({
         imageData,
         composeData,
         fixedTags: ['record'],
-        freeTags: [],
+        freeTags: recordPhotoTags,
         createdAt: recordCreatedAt,
         storageScope: resolveStorageScope(uiState.recordSaveScope),
       });
@@ -9296,7 +9330,7 @@ async function saveRecordGeneratedPage({
       caption: '今日の思い出が1ページになりました',
       imageData,
       fixedTags: ['record'],
-      freeTags: [],
+      freeTags: recordPhotoTags,
       storageScope: resolveStorageScope(uiState.recordSaveScope),
       createdAt: recordCreatedAt,
       composeData,
@@ -9433,6 +9467,7 @@ function bindRecordEvents() {
   document.querySelectorAll('[data-record-open-camera]').forEach((button) => {
     button.addEventListener('click', () => {
       const recordDate = uiState.recordDate || getTodayDateKey();
+      if (recordDate !== getTodayDateKey()) return;
       const time = new Date().toTimeString().slice(0, 5);
       uiState.recordStage = 'camera';
       uiState.recordDraft = {
@@ -10372,7 +10407,7 @@ function bindPostDetailEvents() {
   });
 
   document.querySelectorAll('[data-delete-post]').forEach((button) => {
-    button.addEventListener('click', () => {
+    button.addEventListener('click', async () => {
       const postId = button.dataset.deletePost;
       if (!postId) return;
       const post = getActivePost(postId);
@@ -10380,6 +10415,7 @@ function bindPostDetailEvents() {
       if (!window.confirm('このページを削除しますか？')) return;
 
       deletePost(postId);
+      await deleteCompletedPageFromSupabase(postId);
       if (uiState.previewPostId === postId) {
         uiState.previewPostId = null;
       }
@@ -10621,7 +10657,7 @@ function bindModalEvents() {
   });
 
   document.querySelectorAll('[data-delete-post]').forEach((button) => {
-    button.addEventListener('click', () => {
+    button.addEventListener('click', async () => {
       const postId = button.dataset.deletePost;
       if (!postId) return;
       const post = getActivePost(postId);
@@ -10629,6 +10665,7 @@ function bindModalEvents() {
       if (!window.confirm('この投稿を削除しますか？')) return;
 
       deletePost(postId);
+      await deleteCompletedPageFromSupabase(postId);
       if (uiState.previewPostId === postId) {
         uiState.previewPostId = null;
       }

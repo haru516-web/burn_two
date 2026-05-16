@@ -572,6 +572,17 @@ function renderDateList(state, uiState = {}) {
 function renderPageListEntry(post, activePageScope = 'shared') {
   const title = getPostTitle(post);
   const dateText = getPostDateKey(post).replace(/-/g, '.');
+  const tags = [
+    ...(post.composeData?.recordPhotoTags || []),
+    ...(post.recordPhotoTags || []),
+    ...(post.freeTags || []),
+    ...(post.fixedTags || []),
+  ]
+    .map((tag) => String(tag || '').trim())
+    .filter(Boolean)
+    .filter((tag) => !['record', 'completed'].includes(tag.toLowerCase()))
+    .filter((tag, index, list) => list.indexOf(tag) === index)
+    .slice(0, 5);
   const isCompleted = String(post.id || '').startsWith('completed_');
   const moveTarget = activePageScope === 'personal' ? 'shared' : 'personal';
   const moveLabel = moveTarget === 'personal' ? '個人に表示' : '共有に表示';
@@ -653,7 +664,6 @@ function renderPageList(state, uiState = {}) {
       if (!albumTagQuery) return true;
       const haystack = [
         memory.place,
-        memory.memo,
         memory.price,
         memory.timeOfDay,
         memory.atmosphere,

@@ -72,6 +72,26 @@ async function createCompletedPageUrl(client, storagePath) {
   return '';
 }
 
+function getCompletedPageStoragePaths(page = {}) {
+  return Array.from(new Set([
+    page.final_image_path,
+    page.final_base_image_path,
+    page.final_preview_image_path,
+    page.editor_snapshot_json?.finalImagePath,
+  ]
+    .map((path) => String(path || '').trim())
+    .filter(Boolean)));
+}
+
+async function removeCompletedPageFiles(client, page = {}) {
+  const paths = getCompletedPageStoragePaths(page);
+  if (!paths.length) return;
+  const { error } = await client.storage.from(COMPLETED_PAGES_BUCKET).remove(paths);
+  if (error) {
+    console.warn('Failed to remove completed page files from storage.', error);
+  }
+}
+
 async function upsertProfile(client, user) {
   const email = getUserEmail(user);
   const displayName = user.user_metadata?.name || email.split('@')[0] || 'you';
@@ -338,9 +358,38 @@ export async function moveCompletedPageStorageScope(pageId, nextStorageScope = '
   };
 }
 
+export async function deleteCompletedPage(pageId) {
+  const normalizedPageId = String(pageId || '').replace(/^completed_/, '');
+  if (!normalizedPageId) throw new Error('Page id is missing.');
+
+  const client = requireSupabase();
+  const { user } = await ensureProfileAndMemorySpace({ scope: 'personal' });
+  const { data: page, error: readError } = await client
+    .from('completed_pages')
+    .select('*')
+    .eq('id', normalizedPageId)
+    .eq('author_id', user.id)
+    .maybeSingle();
+  if (readError) throw readError;
+  if (!page) return true;
+
+  await removeCompletedPageFiles(client, page);
+
+  const { error } = await client
+    .from('completed_pages')
+    .delete()
+    .eq('id', normalizedPageId)
+    .eq('author_id', user.id);
+  if (error) throw error;
+  return true;
+}
+
 export function completedPageToLocalPost(page, authorName = 'you') {
   const snapshot = page.editor_snapshot_json && typeof page.editor_snapshot_json === 'object'
     ? page.editor_snapshot_json
+    : {};
+  const snapshotComposeData = snapshot.composeData && typeof snapshot.composeData === 'object'
+    ? snapshot.composeData
     : {};
   const resolvedAuthorName = String(snapshot.authorName || authorName || 'you').trim() || 'you';
   return {
@@ -363,8 +412,9 @@ export function completedPageToLocalPost(page, authorName = 'you') {
     storageScope: page.storageScope || snapshot.storageScope || (page.display_scope === 'personal' ? 'personal' : 'shared'),
     saveScope: page.display_scope || page.save_scope || snapshot.saveScope || (page.storageScope === 'personal' ? 'personal' : 'couple'),
     composeData: {
-      ...(snapshot.composeData || snapshot),
-      source: snapshot.source || snapshot.composeData?.source || 'completed_page',
+      ...snapshot,
+      ...snapshotComposeData,
+      source: snapshot.source || snapshotComposeData.source || 'completed_page',
       completedPageId: page.id,
       finalImagePath: page.final_image_path || snapshot.finalImagePath || '',
       isLocked: true,

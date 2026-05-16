@@ -214,6 +214,7 @@ function renderRecordHome(memories, recordDate = '') {
   const todayKey = getTodayDateKey();
   const yesterdayKey = addDaysToDateKey(todayKey, -1);
   const activeDate = recordDate || todayKey;
+  const canOpenCamera = activeDate === todayKey;
   return `
     <section class="record-page record-page--home">
       <header class="record-header">
@@ -229,9 +230,11 @@ function renderRecordHome(memories, recordDate = '') {
       <section class="record-start-card">
         <div class="record-start-card__copy">
           <h1>今日の記録を残す</h1>
-          <button class="record-primary-button" type="button" data-record-open-camera>
-            ${getIcon('camera')} カメラを起動
-          </button>
+          ${canOpenCamera ? `
+            <button class="record-primary-button" type="button" data-record-open-camera>
+              ${getIcon('camera')} カメラを起動
+            </button>
+          ` : ''}
           <button class="record-primary-button record-create-page-button" type="button" data-record-stage="select" ${memories.length ? '' : 'disabled aria-disabled="true"'}>${getIcon('bookOpen')} &#12506;&#12540;&#12472;&#12434;&#20316;&#12427;</button>
         </div>
       </section>

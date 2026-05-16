@@ -9,7 +9,6 @@ alter table public.photo_assets
 update public.photo_assets
 set tags = array_remove(array[
     nullif(trim(place), ''),
-    nullif(trim(memo), ''),
     nullif(trim(price), ''),
     nullif(trim(time_of_day), ''),
     nullif(trim(atmosphere), ''),

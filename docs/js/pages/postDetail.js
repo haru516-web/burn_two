@@ -2,6 +2,34 @@ import { formatDate } from '../utils/date.js';
 import { getIcon } from '../components/icons.js';
 import { renderAvatarContent } from '../components/avatar.js';
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function getDisplayTags(post, isCompletedPage) {
+  const tags = isCompletedPage
+    ? [
+      ...(post.composeData?.recordPhotoTags || []),
+      ...(post.recordPhotoTags || []),
+      ...(post.freeTags || []),
+      ...(post.fixedTags || []),
+    ]
+    : [
+      ...(post.fixedTags || []),
+      ...(post.freeTags || []),
+    ];
+  return tags
+    .map((tag) => String(tag || '').trim())
+    .filter(Boolean)
+    .filter((tag) => !['record', 'completed'].includes(tag.toLowerCase()))
+    .filter((tag, index, list) => list.indexOf(tag) === index);
+}
+
 function renderPostDetailCard(post, options = {}) {
   const {
     canDelete = false,
@@ -11,7 +39,7 @@ function renderPostDetailCard(post, options = {}) {
     showOwnerMenu = false,
   } = options;
   const isCompletedPage = String(post.id || '').startsWith('completed_') || Boolean(post.composeData?.completedPageId);
-  const tags = isCompletedPage ? [] : [...(post.fixedTags || []), ...(post.freeTags || [])];
+  const tags = getDisplayTags(post, isCompletedPage);
   const activeStorageScope = post.storageScope === 'personal' ? 'personal' : 'shared';
 
   return `
@@ -68,7 +96,7 @@ function renderPostDetailCard(post, options = {}) {
         <p class="post-detail-card__time">${formatDate(post.createdAt)}</p>
         ${tags.length ? `
           <div class="post-detail-card__tags">
-            ${tags.map((tag) => `<button class="chip chip--soft post-detail-card__tag" type="button" data-post-tag="${tag}">${tag}</button>`).join('')}
+            ${tags.map((tag) => `<button class="chip chip--soft post-detail-card__tag" type="button" data-post-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`).join('')}
           </div>
         ` : ''}
       </div>
