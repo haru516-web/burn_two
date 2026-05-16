@@ -182,7 +182,11 @@ const RAW_FIXED_TEMPLATE_LAYOUTS = {
       rawRect(0.0870, 0.4420, 0.9123, 0.9370),
     ],
     texts: [
-      rawRect(0.0870, 0.0610, 0.9123, 0.1495),
+      {
+        ...rawRect(0.0870, 0.0610, 0.9123, 0.1495),
+        fieldKey: 'text',
+        singleLine: false,
+      },
       rawRect(0.5141, 0.1705, 0.9123, 0.4215),
     ],
   },

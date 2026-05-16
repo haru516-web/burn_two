@@ -2262,6 +2262,11 @@
   line-height: 1.2;
 }
 
+.compose-sheet[data-template='page3'] .compose-sheet__text {
+  pointer-events: auto !important;
+  z-index: 120 !important;
+}
+
 .compose-sheet[data-template='page3'] .compose-sheet__subhead {
   top: 14.6%;
   left: 12%;

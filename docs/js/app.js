@@ -7118,7 +7118,7 @@ function bindComposeEvents() {
       element.style.display = 'block';
       element.style.pointerEvents = 'auto';
       element.setAttribute('contenteditable', composeStage === 'edit' ? 'true' : 'false');
-      element.style.zIndex = String(60 + index);
+      element.style.zIndex = String(templateId === 'page3' && block.fieldKey === 'text' ? 120 : 60 + index);
       element.style.left = `${block.x * 100}%`;
       element.style.top = `${block.y * 100}%`;
       element.style.width = `${block.width * 100}%`;
